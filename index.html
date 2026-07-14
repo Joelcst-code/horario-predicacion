@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horario de Predicación Pública</title>
+<style>
+  :root{
+    --bg:#f6f5f1;
+    --card:#ffffff;
+    --ink:#2b2a27;
+    --muted:#6f6c66;
+    --line:#e3e0d8;
+    --accent:#2f6f5e;
+    --accent-dark:#234f43;
+    --warn:#b5533c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.5;
+  }
+  header{
+    background:var(--accent-dark); color:#fdfaf3; padding:22px 16px;
+    text-align:center;
+  }
+  header h1{margin:0 0 4px; font-size:1.35rem; font-weight:700;}
+  header p{margin:0; font-size:0.85rem; color:#d8e6df;}
+  .tabs{
+    display:flex; max-width:900px; margin:16px auto 0; padding:0 16px; gap:8px;
+  }
+  .tab{
+    flex:1; padding:10px 12px; text-align:center; background:var(--card);
+    border:1px solid var(--line); border-radius:10px 10px 0 0; cursor:pointer;
+    font-weight:600; color:var(--muted); font-size:0.9rem;
+  }
+  .tab.active{color:var(--accent-dark); border-bottom:3px solid var(--accent); background:#fff;}
+  main{max-width:900px; margin:0 auto; padding:0 16px 60px;}
+  .panel{background:var(--card); border:1px solid var(--line); border-top:none; border-radius:0 0 12px 12px; padding:20px;}
+  .hidden{display:none;}
+  h2{font-size:1.05rem; margin:0 0 12px; color:var(--accent-dark);}
+  label{display:block; font-size:0.82rem; font-weight:600; margin:12px 0 4px; color:var(--muted);}
+  input[type=text], input[type=tel], select{
+    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font-size:0.92rem; background:#fdfdfc;
+  }
+  .check-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:6px; margin-top:4px;}
+  .check-item{display:flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:400; background:#f3f1ea; border-radius:6px; padding:6px 8px;}
+  .check-item input{width:auto;}
+  button{
+    cursor:pointer; border:none; border-radius:8px; font-weight:600; font-size:0.88rem;
+    padding:10px 16px; background:var(--accent); color:#fff; transition:background .15s;
+  }
+  button:hover{background:var(--accent-dark);}
+  button.secondary{background:#e9e6dc; color:var(--ink);}
+  button.secondary:hover{background:#ddd8ca;}
+  button.danger{background:var(--warn);}
+  button.danger:hover{background:#8f3f2d;}
+  .submit-row{margin-top:16px;}
+  .note{font-size:0.78rem; color:var(--muted); margin-top:6px;}
+  table{width:100%; border-collapse:collapse; margin-top:6px;}
+  th,td{border:1px solid var(--line); padding:6px 8px; font-size:0.82rem; text-align:left; vertical-align:top;}
+  th{background:#f0eee6; color:var(--accent-dark);}
+  .point-card{border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:16px; background:#fdfdfb;}
+  .point-head{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;}
+  .point-head input[type=text]{font-weight:700; font-size:1rem; border:none; background:transparent; padding:2px 4px;}
+  .point-head input[type=text]:focus{background:#fff; border:1px solid var(--line);}
+  .slot-row{display:grid; grid-template-columns:100px 140px 1fr 30px; gap:6px; align-items:center; margin-bottom:6px;}
+  .slot-row select.horario{font-size:0.82rem;}
+  .participants{display:flex; flex-wrap:wrap; gap:4px;}
+  .participants select{flex:1 1 120px; min-width:100px; font-size:0.78rem; padding:6px;}
+  .add-slot-btn{margin-top:4px;}
+  .pin-gate{max-width:340px; margin:40px auto; text-align:center;}
+  .pill{display:inline-block; background:#eef4f1; color:var(--accent-dark); border-radius:20px; padding:3px 10px; font-size:0.72rem; font-weight:700; margin-left:6px;}
+  .status-msg{margin-top:10px; font-size:0.85rem; font-weight:600;}
+  .status-msg.ok{color:var(--accent-dark);}
+  .status-msg.err{color:var(--warn);}
+  .pub-list{max-height:220px; overflow:auto; border:1px solid var(--line); border-radius:8px; padding:8px; font-size:0.82rem;}
+  .pub-list div{padding:4px 0; border-bottom:1px solid var(--line);}
+  .pub-list div:last-child{border-bottom:none;}
+  .actions-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;}
+  .small{font-size:0.75rem; color:var(--muted);}
+  .loading{text-align:center; padding:30px; color:var(--muted);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🕊️ Servicio del Campo — Horario Semanal</h1>
+  <p>Congregación · Predicación pública</p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="publico">Ver horario y registrarme</div>
+  <div class="tab" data-tab="admin">Panel Admin</div>
+</div>
+
+<main>
+
+  <!-- ============ VISTA PÚBLICA ============ -->
+  <section id="tab-publico" class="panel">
+    <h2>📋 Horario actual</h2>
+    <div id="publicSchedule" class="loading">Cargando horario...</div>
+
+    <hr style="margin:22px 0; border:none; border-top:1px solid var(--line);">
+
+    <h2>✍️ Regístrate como publicador disponible</h2>
+    <p class="small">Llena tus datos para que el hermano/hermana encargado del horario pueda asignarte a un punto. Esto no te asigna automáticamente — solo indica tu disponibilidad.</p>
+
+    <label>Nombre completo</label>
+    <input type="text" id="regName" placeholder="Ej: Juan Pérez">
+
+    <label>Teléfono (opcional)</label>
+    <input type="tel" id="regPhone" placeholder="09xxxxxxxx">
+
+    <label>Días disponibles</label>
+    <div class="check-grid" id="regDays"></div>
+
+    <label>Horarios disponibles</label>
+    <div class="check-grid" id="regHorarios"></div>
+
+    <label>Puntos donde puedes ir (opcional, deja vacío si te da igual)</label>
+    <input type="text" id="regPuntos" placeholder="Ej: Parque Central, Terminal">
+
+    <div class="submit-row">
+      <button id="btnRegister">Registrar mi disponibilidad</button>
+      <div id="regStatus" class="status-msg"></div>
+    </div>
+  </section>
+
+  <!-- ============ VISTA ADMIN ============ -->
+  <section id="tab-admin" class="panel hidden">
+
+    <div id="pinGate" class="pin-gate">
+      <h2>🔒 Acceso administrador</h2>
+      <p class="small">Ingresa el PIN para editar el horario. (Esto es solo un filtro simple, no es seguridad real — cualquiera con el PIN puede entrar.)</p>
+      <input type="text" id="pinInput" placeholder="PIN" style="text-align:center; margin-bottom:10px;">
+      <button id="btnPinEnter">Entrar</button>
+      <p class="small" id="pinHelp" style="margin-top:10px;"></p>
+    </div>
+
+    <div id="adminArea" class="hidden">
+      <h2>👥 Publicadores registrados <span class="pill" id="pubCount">0</span></h2>
+      <div id="publisherList" class="pub-list">Cargando...</div>
+
+      <hr style="margin:20px 0; border:none; border-top:1px solid var(--line);">
+
+      <h2>🗺️ Puntos de predicación</h2>
+      <div id="pointsContainer">Cargando...</div>
+      <button id="btnAddPoint" class="secondary">+ Agregar punto</button>
+
+      <div class="actions-row">
+        <button id="btnSaveSchedule">💾 Guardar cambios</button>
+        <button id="btnPublish" class="secondary">📤 Marcar como publicado (solo lectura para todos)</button>
+      </div>
+      <div id="adminStatus" class="status-msg"></div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const HORARIOS = ["6:30 - 8:30","9:00 - 11:00","16:00 - 18:00","18:00 - 20:00","20:00 - 21:30"];
+const ADMIN_PIN = "1234"; // cámbialo por el que quieras usar en tu congregación
+
+let publishers = [];
+let schedule = []; // [{id, name, slots:[{id, day, horario, participants:[names]}]}]
+
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+// ---------- Tabs ----------
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById("tab-publico").classList.toggle("hidden", t.dataset.tab!=="publico");
+    document.getElementById("tab-admin").classList.toggle("hidden", t.dataset.tab!=="admin");
+  });
+});
+
+// ---------- Build checkbox grids ----------
+function buildChecks(container, items, prefix){
+  container.innerHTML = items.map(i=>`
+    <label class="check-item"><input type="checkbox" value="${i}" data-group="${prefix}"> ${i}</label>
+  `).join("");
+}
+buildChecks(document.getElementById("regDays"), DIAS, "day");
+buildChecks(document.getElementById("regHorarios"), HORARIOS, "horario");
+
+// ---------- Storage helpers ----------
+async function loadPublishers(){
+  try{
+    const res = await window.storage.get("publishers", true);
+    publishers = res ? JSON.parse(res.value) : [];
+  }catch(e){ publishers = []; }
+}
+async function savePublishers(){
+  await window.storage.set("publishers", JSON.stringify(publishers), true);
+}
+async function loadSchedule(){
+  try{
+    const res = await window.storage.get("schedule", true);
+    schedule = res ? JSON.parse(res.value) : null;
+  }catch(e){ schedule = null; }
+  if(!schedule){
+    schedule = defaultSchedule();
+    await saveSchedule();
+  }
+}
+async function saveSchedule(){
+  await window.storage.set("schedule", JSON.stringify(schedule), true);
+}
+function defaultSchedule(){
+  return [1,2,3,4,5].map((n,idx)=>({
+    id: uid(),
+    name: "Punto " + n,
+    slots: []
+  }));
+}
+
+// ---------- Register publisher ----------
+document.getElementById("btnRegister").addEventListener("click", async ()=>{
+  const name = document.getElementById("regName").value.trim();
+  const statusEl = document.getElementById("regStatus");
+  if(!name){
+    statusEl.textContent = "Por favor escribe tu nombre.";
+    statusEl.className = "status-msg err";
+    return;
+  }
+  const days = [...document.querySelectorAll('#regDays input:checked')].map(c=>c.value);
+  const horarios = [...document.querySelectorAll('#regHorarios input:checked')].map(c=>c.value);
+  const phone = document.getElementById("regPhone").value.trim();
+  const puntos = document.getElementById("regPuntos").value.trim();
+
+  await loadPublishers();
+  publishers.push({ id: uid(), name, phone, days, horarios, puntos });
+  try{
+    await savePublishers();
+    statusEl.textContent = "¡Listo! Quedaste registrado, " + name + ".";
+    statusEl.className = "status-msg ok";
+    document.getElementById("regName").value="";
+    document.getElementById("regPhone").value="";
+    document.getElementById("regPuntos").value="";
+    document.querySelectorAll('#regDays input, #regHorarios input').forEach(c=>c.checked=false);
+  }catch(e){
+    statusEl.textContent = "Hubo un error guardando tu registro. Intenta de nuevo.";
+    statusEl.className = "status-msg err";
+  }
+});
+
+// ---------- Public schedule view (read-only) ----------
+async function renderPublicSchedule(){
+  const el = document.getElementById("publicSchedule");
+  await loadSchedule();
+  if(schedule.length===0){
+    el.innerHTML = "<p class='small'>Aún no hay puntos configurados.</p>";
+    return;
+  }
+  el.innerHTML = schedule.map(p=>{
+    const rows = p.slots.length ? p.slots.map(s=>`
+      <tr>
+        <td>${s.day}</td>
+        <td>${s.horario}</td>
+        <td>${s.participants.filter(Boolean).join(", ") || "<span class='small'>Sin asignar</span>"}</td>
+      </tr>
+    `).join("") : `<tr><td colspan="3" class="small">Sin horarios en este punto todavía</td></tr>`;
+    return `
+      <div class="point-card">
+        <h3 style="margin:0 0 8px; color:var(--accent-dark);">📍 ${p.name}</h3>
+        <table><thead><tr><th>Día</th><th>Horario</th><th>Participantes</th></tr></thead><tbody>${rows}</tbody></table>
+      </div>`;
+  }).join("");
+}
+
+// ---------- Admin PIN ----------
+document.getElementById("btnPinEnter").addEventListener("click", ()=>{
+  const val = document.getElementById("pinInput").value.trim();
+  if(val === ADMIN_PIN){
+    document.getElementById("pinGate").classList.add("hidden");
+    document.getElementById("adminArea").classList.remove("hidden");
+    renderAdmin();
+  }else{
+    document.getElementById("pinHelp").textContent = "PIN incorrecto.";
+  }
+});
+
+// ---------- Admin render ----------
+async function renderAdmin(){
+  await loadPublishers();
+  await loadSchedule();
+  renderPublisherList();
+  renderPointsEditor();
+}
+
+function renderPublisherList(){
+  const el = document.getElementById("publisherList");
+  document.getElementById("pubCount").textContent = publishers.length;
+  if(publishers.length===0){
+    el.innerHTML = "<div class='small'>Nadie se ha registrado todavía.</div>";
+    return;
+  }
+  el.innerHTML = publishers.map(p=>`
+    <div><strong>${p.name}</strong> — ${p.days.join(", ")||"(sin días)"} · ${p.horarios.join(", ")||"(sin horarios)"} ${p.puntos?("· prefiere: "+p.puntos):""} ${p.phone?("· 📞 "+p.phone):""}
+      <button class="danger" style="padding:2px 8px; font-size:0.7rem; float:right;" onclick="removePublisher('${p.id}')">Quitar</button>
+    </div>
+  `).join("");
+}
+
+async function removePublisher(id){
+  publishers = publishers.filter(p=>p.id!==id);
+  await savePublishers();
+  renderPublisherList();
+  renderPointsEditor(); // dropdown options change
+}
+window.removePublisher = removePublisher;
+
+function publisherOptions(selected){
+  let opts = `<option value="">— vacío —</option>`;
+  opts += publishers.map(p=>`<option value="${p.name}" ${p.name===selected?"selected":""}>${p.name}</option>`).join("");
+  if(selected && !publishers.some(p=>p.name===selected)){
+    opts += `<option value="${selected}" selected>${selected} (no registrado)</option>`;
+  }
+  return opts;
+}
+
+function renderPointsEditor(){
+  const el = document.getElementById("pointsContainer");
+  el.innerHTML = schedule.map(point=>`
+    <div class="point-card" data-point="${point.id}">
+      <div class="point-head">
+        <input type="text" value="${point.name}" onchange="renamePoint('${point.id}', this.value)">
+        <button class="danger" onclick="removePoint('${point.id}')">Eliminar punto</button>
+      </div>
+      <div class="slots">
+        ${point.slots.map(s=>renderSlotRow(point.id, s)).join("")}
+      </div>
+      <button class="secondary add-slot-btn" onclick="addSlot('${point.id}')">+ Agregar horario a este punto</button>
+    </div>
+  `).join("");
+}
+
+function renderSlotRow(pointId, slot){
+  return `
+    <div class="slot-row" data-slot="${slot.id}">
+      <select class="dia" onchange="updateSlot('${pointId}','${slot.id}','day',this.value)">
+        ${DIAS.map(d=>`<option ${d===slot.day?"selected":""}>${d}</option>`).join("")}
+      </select>
+      <select class="horario" onchange="updateSlot('${pointId}','${slot.id}','horario',this.value)">
+        ${HORARIOS.map(h=>`<option ${h===slot.horario?"selected":""}>${h}</option>`).join("")}
+      </select>
+      <div class="participants">
+        ${[0,1,2,3,4].map(i=>`
+          <select onchange="updateParticipant('${pointId}','${slot.id}',${i},this.value)">
+            ${publisherOptions(slot.participants[i]||"")}
+          </select>
+        `).join("")}
+      </div>
+      <button class="danger" style="padding:6px 8px;" onclick="removeSlot('${pointId}','${slot.id}')">✕</button>
+    </div>
+  `;
+}
+
+function findPoint(id){ return schedule.find(p=>p.id===id); }
+
+function renamePoint(id, val){
+  findPoint(id).name = val;
+}
+window.renamePoint = renamePoint;
+
+function removePoint(id){
+  schedule = schedule.filter(p=>p.id!==id);
+  renderPointsEditor();
+}
+window.removePoint = removePoint;
+
+function addPointFn(){
+  schedule.push({ id: uid(), name: "Nuevo punto", slots: [] });
+  renderPointsEditor();
+}
+document.getElementById("btnAddPoint").addEventListener("click", addPointFn);
+
+function addSlot(pointId){
+  findPoint(pointId).slots.push({ id: uid(), day: DIAS[0], horario: HORARIOS[0], participants:["","","","",""] });
+  renderPointsEditor();
+}
+window.addSlot = addSlot;
+
+function removeSlot(pointId, slotId){
+  const p = findPoint(pointId);
+  p.slots = p.slots.filter(s=>s.id!==slotId);
+  renderPointsEditor();
+}
+window.removeSlot = removeSlot;
+
+function updateSlot(pointId, slotId, field, value){
+  const p = findPoint(pointId);
+  const s = p.slots.find(s=>s.id===slotId);
+  s[field] = value;
+}
+window.updateSlot = updateSlot;
+
+function updateParticipant(pointId, slotId, idx, value){
+  const p = findPoint(pointId);
+  const s = p.slots.find(s=>s.id===slotId);
+  s.participants[idx] = value;
+}
+window.updateParticipant = updateParticipant;
+
+// ---------- Save / Publish ----------
+document.getElementById("btnSaveSchedule").addEventListener("click", async ()=>{
+  const statusEl = document.getElementById("adminStatus");
+  try{
+    await saveSchedule();
+    statusEl.textContent = "Cambios guardados correctamente.";
+    statusEl.className = "status-msg ok";
+  }catch(e){
+    statusEl.textContent = "Error al guardar. Intenta de nuevo.";
+    statusEl.className = "status-msg err";
+  }
+});
+
+document.getElementById("btnPublish").addEventListener("click", async ()=>{
+  await saveSchedule();
+  renderPublicSchedule();
+  const statusEl = document.getElementById("adminStatus");
+  statusEl.textContent = "Horario publicado — ya es visible en la vista pública.";
+  statusEl.className = "status-msg ok";
+});
+
+// ---------- Init ----------
+renderPublicSchedule();
+</script>
+
+</body>
+</html>
