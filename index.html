@@ -4,103 +4,86 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Predicación Pública - Horarios</title>
+<!-- SheetJS para importar archivos Excel -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <style>
   :root{
-    --bg:#f6f5f1;
-    --card:#ffffff;
-    --ink:#2b2a27;
-    --muted:#6f6c66;
-    --line:#e3e0d8;
-    --accent:#2f6f5e;
-    --accent-dark:#234f43;
-    --warn:#b5533c;
+    --bg:#f6f5f1; --card:#ffffff; --ink:#2b2a27; --muted:#6f6c66;
+    --line:#e3e0d8; --accent:#2f6f5e; --accent-dark:#234f43; --warn:#b5533c;
   }
   *{box-sizing:border-box;}
-  body{
-    margin:0; font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
-    background:var(--bg); color:var(--ink); line-height:1.5;
-  }
-  header{
-    background:var(--accent-dark); color:#fdfaf3; padding:22px 16px;
-    text-align:center;
-  }
-  header h1{margin:0 0 2px; font-size:1.35rem; font-weight:700;}
-  header h2{margin:0; font-size:1rem; font-weight:400; color:#d8e6df;}
-  .tabs{
-    display:flex; max-width:900px; margin:16px auto 0; padding:0 16px; gap:8px;
-  }
-  .tab{
-    flex:1; padding:10px 12px; text-align:center; background:var(--card);
-    border:1px solid var(--line); border-radius:10px 10px 0 0; cursor:pointer;
-    font-weight:600; color:var(--muted); font-size:0.9rem;
-  }
-  .tab.active{color:var(--accent-dark); border-bottom:3px solid var(--accent); background:#fff;}
-  main{max-width:900px; margin:0 auto; padding:0 16px 60px;}
-  .panel{background:var(--card); border:1px solid var(--line); border-top:none; border-radius:0 0 12px 12px; padding:20px;}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;}
+  header{background:var(--accent-dark);color:#fdfaf3;padding:22px 16px;text-align:center;}
+  header h1{margin:0 0 2px;font-size:1.35rem;font-weight:700;}
+  header h2{margin:0;font-size:1rem;font-weight:400;color:#d8e6df;}
+  .tabs{display:flex;max-width:900px;margin:16px auto 0;padding:0 16px;gap:8px;}
+  .tab{flex:1;padding:10px 12px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:10px 10px 0 0;cursor:pointer;font-weight:600;color:var(--muted);font-size:0.9rem;}
+  .tab.active{color:var(--accent-dark);border-bottom:3px solid var(--accent);background:#fff;}
+  main{max-width:900px;margin:0 auto;padding:0 16px 60px;}
+  .panel{background:var(--card);border:1px solid var(--line);border-top:none;border-radius:0 0 12px 12px;padding:20px;}
   .hidden{display:none;}
-  h2{font-size:1.05rem; margin:0 0 12px; color:var(--accent-dark);}
-  label{display:block; font-size:0.82rem; font-weight:600; margin:12px 0 4px; color:var(--muted);}
-  input[type=text], input[type=tel], select{
-    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font-size:0.92rem; background:#fdfdfc;
-  }
-  .check-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:6px; margin-top:4px;}
-  .check-item{display:flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:400; background:#f3f1ea; border-radius:6px; padding:6px 8px;}
+  h2{font-size:1.05rem;margin:0 0 12px;color:var(--accent-dark);}
+  label{display:block;font-size:0.82rem;font-weight:600;margin:12px 0 4px;color:var(--muted);}
+  input[type=text],input[type=tel],input[type=password],select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:0.92rem;background:#fdfdfc;}
+  .check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;margin-top:4px;}
+  .check-item{display:flex;align-items:center;gap:6px;font-size:0.85rem;font-weight:400;background:#f3f1ea;border-radius:6px;padding:6px 8px;}
   .check-item input{width:auto;}
-  button{
-    cursor:pointer; border:none; border-radius:8px; font-weight:600; font-size:0.88rem;
-    padding:10px 16px; background:var(--accent); color:#fff; transition:background .15s;
-  }
+  button{cursor:pointer;border:none;border-radius:8px;font-weight:600;font-size:0.88rem;padding:10px 16px;background:var(--accent);color:#fff;transition:background .15s;}
   button:hover{background:var(--accent-dark);}
-  button.secondary{background:#e9e6dc; color:var(--ink);}
+  button.secondary{background:#e9e6dc;color:var(--ink);}
   button.secondary:hover{background:#ddd8ca;}
   button.danger{background:var(--warn);}
   button.danger:hover{background:#8f3f2d;}
-  button.icon-btn{background:transparent; color:var(--accent-dark); padding:4px 7px; font-size:0.85rem; border:1px solid var(--line);}
+  button.icon-btn{background:transparent;color:var(--accent-dark);padding:4px 7px;font-size:0.85rem;border:1px solid var(--line);}
   button.icon-btn:hover{background:#eef4f1;}
   .submit-row{margin-top:16px;}
-  table{width:100%; border-collapse:collapse; margin-top:6px;}
-  th,td{border:1px solid var(--line); padding:6px 8px; font-size:0.82rem; text-align:left; vertical-align:top;}
-  th{background:#f0eee6; color:var(--accent-dark);}
-  .point-card{border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:16px; background:#fdfdfb;}
-  .point-head{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;}
-  .point-head input[type=text]{font-weight:700; font-size:1rem; border:none; background:transparent; padding:2px 4px;}
-  .point-head input[type=text]:focus{background:#fff; border:1px solid var(--line);}
-  .slot-row{display:grid; grid-template-columns:110px 150px 1fr 30px; gap:6px; align-items:center; margin-bottom:6px;}
-  .participants{display:flex; flex-wrap:wrap; gap:4px;}
-  .participants select{flex:1 1 120px; min-width:100px; font-size:0.78rem; padding:6px;}
-  .pin-gate{max-width:340px; margin:40px auto; text-align:center;}
-  .pill{display:inline-block; background:#eef4f1; color:var(--accent-dark); border-radius:20px; padding:3px 10px; font-size:0.72rem; font-weight:700; margin-left:6px;}
-  .status-msg{margin-top:10px; font-size:0.85rem; font-weight:600;}
+  table{width:100%;border-collapse:collapse;margin-top:6px;}
+  th,td{border:1px solid var(--line);padding:6px 8px;font-size:0.82rem;text-align:left;vertical-align:top;}
+  th{background:#f0eee6;color:var(--accent-dark);}
+  .point-card{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:16px;background:#fdfdfb;}
+  .point-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;}
+  .point-head input[type=text]{font-weight:700;font-size:1rem;border:none;background:transparent;padding:2px 4px;}
+  .point-head input[type=text]:focus{background:#fff;border:1px solid var(--line);}
+  .slot-row{display:grid;grid-template-columns:110px 150px 1fr 30px;gap:6px;align-items:center;margin-bottom:6px;}
+  .participants{display:flex;flex-wrap:wrap;gap:4px;}
+  .participants select{flex:1 1 120px;min-width:100px;font-size:0.78rem;padding:6px;}
+  .pin-gate{max-width:360px;margin:40px auto;text-align:center;}
+  .pill{display:inline-block;background:#eef4f1;color:var(--accent-dark);border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:700;margin-left:6px;}
+  .status-msg{margin-top:10px;font-size:0.85rem;font-weight:600;}
   .status-msg.ok{color:var(--accent-dark);}
   .status-msg.err{color:var(--warn);}
-  .pub-list{max-height:320px; overflow:auto; border:1px solid var(--line); border-radius:8px; font-size:0.82rem;}
-  .pub-row{padding:8px 10px; border-bottom:1px solid var(--line); display:flex; align-items:flex-start; gap:8px;}
+  .pub-list{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:8px;font-size:0.82rem;}
+  .pub-row{padding:8px 10px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:8px;}
   .pub-row:last-child{border-bottom:none;}
   .pub-info{flex:1;}
-  .pub-actions{display:flex; gap:4px; flex-shrink:0;}
-  .edit-form{background:#f7f5ee; border-radius:8px; padding:10px; margin-top:8px; display:none;}
+  .pub-actions{display:flex;gap:4px;flex-shrink:0;}
+  .edit-form{background:#f7f5ee;border-radius:8px;padding:10px;margin-top:8px;display:none;}
   .edit-form.open{display:block;}
-  .edit-row{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;}
-  .edit-row input{font-size:0.82rem; padding:6px 8px;}
-  .actions-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;}
-  .small{font-size:0.75rem; color:var(--muted);}
-  /* Punto tabs vista pública */
-  .punto-tabs{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;}
-  .punto-tab{padding:7px 14px; border-radius:20px; border:1px solid var(--line); background:#f3f1ea; color:var(--muted); cursor:pointer; font-size:0.83rem; font-weight:600;}
-  .punto-tab.active{background:var(--accent-dark); color:#fff; border-color:var(--accent-dark);}
+  .edit-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .edit-row input{font-size:0.82rem;padding:6px 8px;}
+  .actions-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .small{font-size:0.75rem;color:var(--muted);}
+  .punto-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+  .punto-tab{padding:7px 14px;border-radius:20px;border:1px solid var(--line);background:#f3f1ea;color:var(--muted);cursor:pointer;font-size:0.83rem;font-weight:600;}
+  .punto-tab.active{background:var(--accent-dark);color:#fff;border-color:var(--accent-dark);}
   .punto-panel{display:none;}
   .punto-panel.active{display:block;}
-  .dia-row{display:flex; align-items:baseline; gap:8px; padding:6px 0; border-bottom:1px solid var(--line);}
+  .dia-row{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);}
   .dia-row:last-child{border-bottom:none;}
-  .dia-label{min-width:80px; font-weight:700; font-size:0.82rem; color:var(--accent-dark);}
+  .dia-label{min-width:80px;font-weight:700;font-size:0.82rem;color:var(--accent-dark);}
   .dia-slots{font-size:0.82rem;}
   .dia-slot-item{margin-bottom:2px;}
-  .sin-datos{font-size:0.8rem; color:var(--muted); font-style:italic;}
-  /* Rangos de horario */
-  .rango-row{display:grid; grid-template-columns:1fr 32px; gap:6px; align-items:center; margin-bottom:6px;}
-  .rango-row input{font-size:0.85rem; padding:7px 9px;}
-  .general-card{border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:12px; background:#f7f5ee;}
-  hr.div{margin:20px 0; border:none; border-top:1px solid var(--line);}
+  .sin-datos{font-size:0.8rem;color:var(--muted);font-style:italic;}
+  .rango-row{display:grid;grid-template-columns:1fr 32px;gap:6px;align-items:center;margin-bottom:6px;}
+  .rango-row input{font-size:0.85rem;padding:7px 9px;}
+  .general-card{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px;background:#f7f5ee;}
+  hr.div{margin:20px 0;border:none;border-top:1px solid var(--line);}
+  .io-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+  .badge-user{display:inline-block;background:#eef4f1;color:var(--accent-dark);border-radius:6px;padding:3px 10px;font-size:0.75rem;font-weight:700;margin-left:8px;}
+  .firebase-note{background:#fffbe6;border:1px solid #e8d96a;border-radius:8px;padding:12px 14px;font-size:0.8rem;margin-bottom:16px;}
+  .firebase-note strong{display:block;margin-bottom:4px;}
+  .respaldo-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  input[type=file]{font-size:0.82rem;}
 </style>
 </head>
 <body>
@@ -151,36 +134,72 @@
   <!-- ============ VISTA ADMIN ============ -->
   <section id="tab-admin" class="panel hidden">
 
-    <div id="pinGate" class="pin-gate">
+    <!-- Login -->
+    <div id="loginGate" class="pin-gate">
       <h2>🔒 Acceso administrador</h2>
-      <p class="small">Ingresa el PIN para editar el horario.</p>
-      <input type="text" id="pinInput" placeholder="PIN" style="text-align:center; margin-bottom:10px;">
-      <button id="btnPinEnter">Entrar</button>
-      <p class="small" id="pinHelp" style="margin-top:10px;"></p>
+      <p class="small">Ingresa tu usuario y contraseña.</p>
+      <label style="text-align:left;">Usuario</label>
+      <input type="text" id="loginUser" placeholder="Usuario" style="margin-bottom:8px;">
+      <label style="text-align:left;">Contraseña</label>
+      <input type="password" id="loginPass" placeholder="Contraseña" style="margin-bottom:10px;">
+      <button id="btnLogin">Entrar</button>
+      <p class="small err" id="loginHelp" style="margin-top:10px;color:var(--warn);"></p>
     </div>
 
+    <!-- Panel principal -->
     <div id="adminArea" class="hidden">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span class="small">Sesión: <span class="badge-user" id="badgeUser"></span></span>
+        <button class="secondary" style="padding:5px 12px;font-size:0.78rem;" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
+
+      <!-- Aviso Firebase -->
+      <div class="firebase-note" id="firebaseNote">
+        <strong>⚠️ Modo local (solo este dispositivo)</strong>
+        Para que los datos sean visibles desde cualquier dispositivo, configura Firebase Realtime Database.
+        <a href="#" onclick="mostrarInstruccionesFirebase();return false;" style="color:var(--accent-dark);">Ver instrucciones →</a>
+      </div>
+      <div id="firebaseInstrucciones" class="hidden general-card" style="margin-bottom:16px;">
+        <strong style="display:block;margin-bottom:6px;">Cómo conectar Firebase (gratis, 5 min):</strong>
+        <ol class="small" style="margin:0;padding-left:18px;line-height:1.8;">
+          <li>Ve a <strong>console.firebase.google.com</strong> → Crear proyecto → dale un nombre → continuar.</li>
+          <li>En el proyecto, clic en <strong>Realtime Database</strong> → Crear base de datos → modo prueba.</li>
+          <li>Clic en el ícono <strong>&lt;/&gt;</strong> (web) para registrar tu app, copia el objeto <code>firebaseConfig</code>.</li>
+          <li>Abre el archivo <code>index.html</code> en el editor → busca la variable <code>FIREBASE_CONFIG</code> al inicio del script → pega los valores.</li>
+          <li>Guarda, sube con git push y listo.</li>
+        </ol>
+        <button class="secondary" style="margin-top:8px;font-size:0.78rem;padding:5px 10px;" onclick="document.getElementById('firebaseInstrucciones').classList.add('hidden')">Cerrar</button>
+      </div>
 
       <!-- Publicadores -->
       <h2>👥 Publicadores registrados <span class="pill" id="pubCount">0</span></h2>
       <div id="publisherList" class="pub-list">Cargando...</div>
-      <div style="margin-top:10px;">
-        <button id="btnExportExcel" class="secondary">📥 Exportar a Excel (.csv)</button>
+
+      <div class="io-row" style="margin-top:10px;">
+        <button id="btnExportExcel" class="secondary">📥 Exportar lista (.csv)</button>
+        <label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <span style="background:#e9e6dc;color:var(--ink);border-radius:8px;padding:8px 14px;font-size:0.85rem;font-weight:600;">📤 Importar desde Excel/CSV</span>
+          <input type="file" id="fileImport" accept=".csv,.xlsx,.xls" style="display:none;" onchange="importarPublicadores(this)">
+        </label>
       </div>
+      <p class="small" style="margin-top:6px;">El archivo debe tener una columna llamada <strong>nombre</strong> (y opcionalmente <strong>telefono</strong>, <strong>puntos</strong>).</p>
+      <div id="importStatus" class="status-msg"></div>
 
       <hr class="div">
 
-      <!-- Rangos de horario -->
-      <h2>🕐 Rangos de horario</h2>
-      <p class="small">Edita, elimina o agrega rangos. Estos son los que aparecen en los selectores al armar el horario y los que ven los publicadores al registrarse.</p>
-      <div class="general-card">
-        <div id="rangosContainer"></div>
-        <button class="secondary" style="margin-top:6px;" onclick="addRango()">+ Agregar rango</button>
+      <!-- Rangos de horario — solo para joel -->
+      <div id="seccionRangos">
+        <h2>🕐 Rangos de horario</h2>
+        <p class="small">Edita, elimina o agrega rangos. Estos son los que aparecen en los selectores y en el formulario de registro.</p>
+        <div class="general-card">
+          <div id="rangosContainer"></div>
+          <button class="secondary" style="margin-top:6px;" onclick="addRango()">+ Agregar rango</button>
+        </div>
+        <button id="btnSaveRangos">💾 Guardar rangos</button>
+        <div id="rangosStatus" class="status-msg"></div>
+        <hr class="div">
       </div>
-      <button id="btnSaveRangos">💾 Guardar rangos</button>
-      <div id="rangosStatus" class="status-msg"></div>
-
-      <hr class="div">
 
       <!-- Puntos -->
       <h2>🗺️ Puntos de predicación</h2>
@@ -192,56 +211,86 @@
         <button id="btnPublish" class="secondary">📤 Publicar horario</button>
       </div>
       <div id="adminStatus" class="status-msg"></div>
+
+      <hr class="div">
+
+      <!-- Respaldo -->
+      <h2>🗄️ Respaldo y restauración</h2>
+      <p class="small">El respaldo guarda absolutamente todo: publicadores, teléfonos, horarios elegidos, puntos, franjas y asignaciones.</p>
+      <div class="respaldo-row">
+        <button id="btnRespaldo">💾 Hacer respaldo</button>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <span style="background:var(--accent);color:#fff;border-radius:8px;padding:10px 16px;font-size:0.88rem;font-weight:600;">📂 Restaurar respaldo</span>
+          <input type="file" id="fileRespaldo" accept=".json" style="display:none;" onchange="restaurarRespaldo(this)">
+        </label>
+      </div>
+      <div id="respaldoStatus" class="status-msg"></div>
+
     </div>
   </section>
 
 </main>
 
 <script>
+// ============================================================
+// CONFIGURACIÓN FIREBASE (opcional — para acceso multi-dispositivo)
+// Si lo dejas vacío, los datos se guardan solo en este navegador.
+// Reemplaza con tu propio firebaseConfig de console.firebase.google.com
+// ============================================================
+const FIREBASE_CONFIG = {
+  // apiKey: "...",
+  // authDomain: "...",
+  // databaseURL: "https://tu-proyecto-default-rtdb.firebaseio.com",
+  // projectId: "...",
+};
+
+const USE_FIREBASE = !!(FIREBASE_CONFIG.databaseURL);
+
+// ============================================================
+// USUARIOS
+// ============================================================
+const USERS = {
+  admin: { pass: "1914",        role: "admin" },   // sin editar rangos
+  joel:  { pass: "1914.1914",   role: "super" },   // acceso completo
+};
+
 const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 const DIAS_SEMANA = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
 const DEFAULT_HORARIOS = ["6:30 - 8:30","9:00 - 11:00","16:00 - 18:00","18:00 - 20:00","20:00 - 21:30"];
-const ADMIN_PIN = "1914.1914";
 
 let publishers = [];
-let schedule = [];
-let horarios = []; // lista editable de rangos
+let schedule   = [];
+let horarios   = [];
+let currentUser = null; // {username, role}
 
 function uid(){ return Math.random().toString(36).slice(2,9); }
 
-// ---------- localStorage ----------
-function loadPublishers(){
-  try{ publishers = JSON.parse(localStorage.getItem("publishers")||"[]"); }
-  catch(e){ publishers = []; }
-}
-function savePublishers(){
-  localStorage.setItem("publishers", JSON.stringify(publishers));
-}
+// ============================================================
+// STORAGE (localStorage con wrapper para Firebase futuro)
+// ============================================================
+function ls_get(key){ try{ return JSON.parse(localStorage.getItem(key)); }catch(e){ return null; } }
+function ls_set(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+function loadPublishers(){ publishers = ls_get("publishers") || []; }
+function savePublishers(){ ls_set("publishers", publishers); }
 function loadSchedule(){
-  try{
-    const raw = localStorage.getItem("schedule");
-    schedule = raw ? JSON.parse(raw) : null;
-  }catch(e){ schedule = null; }
+  schedule = ls_get("schedule");
   if(!schedule){ schedule = defaultSchedule(); saveSchedule(); }
 }
-function saveSchedule(){
-  localStorage.setItem("schedule", JSON.stringify(schedule));
-}
+function saveSchedule(){ ls_set("schedule", schedule); }
 function loadHorarios(){
-  try{
-    const raw = localStorage.getItem("horarios");
-    horarios = raw ? JSON.parse(raw) : null;
-  }catch(e){ horarios = null; }
+  horarios = ls_get("horarios");
   if(!horarios){ horarios = DEFAULT_HORARIOS.slice(); saveHorarios(); }
 }
-function saveHorarios(){
-  localStorage.setItem("horarios", JSON.stringify(horarios));
-}
+function saveHorarios(){ ls_set("horarios", horarios); }
+
 function defaultSchedule(){
   return [1,2,3,4,5].map(n=>({ id: uid(), name: "Punto " + n, slots: [] }));
 }
 
-// ---------- Tabs ----------
+// ============================================================
+// TABS
+// ============================================================
 document.querySelectorAll(".tab").forEach(t=>{
   t.addEventListener("click", ()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
@@ -251,61 +300,56 @@ document.querySelectorAll(".tab").forEach(t=>{
   });
 });
 
-// ---------- Checkboxes (usan horarios dinámicos) ----------
+// ============================================================
+// CHECKBOXES
+// ============================================================
 function buildChecks(container, items, prefix){
   container.innerHTML = items.map(i=>`
     <label class="check-item"><input type="checkbox" value="${i}" data-group="${prefix}"> ${i}</label>
   `).join("");
 }
-function rebuildRegHorarios(){
-  buildChecks(document.getElementById("regHorarios"), horarios, "horario");
-}
+function rebuildRegHorarios(){ buildChecks(document.getElementById("regHorarios"), horarios, "horario"); }
 buildChecks(document.getElementById("regDays"), DIAS, "day");
 
-// ---------- Register publisher ----------
+// ============================================================
+// REGISTRO PUBLICADOR
+// ============================================================
 document.getElementById("btnRegister").addEventListener("click", ()=>{
   const name = document.getElementById("regName").value.trim();
   const statusEl = document.getElementById("regStatus");
-  if(!name){
-    statusEl.textContent = "Por favor escribe tu nombre.";
-    statusEl.className = "status-msg err";
-    return;
-  }
-  const days = [...document.querySelectorAll('#regDays input:checked')].map(c=>c.value);
-  const hs = [...document.querySelectorAll('#regHorarios input:checked')].map(c=>c.value);
-  const phone = document.getElementById("regPhone").value.trim();
-  const puntos = document.getElementById("regPuntos").value.trim();
-
+  if(!name){ statusEl.textContent="Por favor escribe tu nombre."; statusEl.className="status-msg err"; return; }
+  const days    = [...document.querySelectorAll('#regDays input:checked')].map(c=>c.value);
+  const hs      = [...document.querySelectorAll('#regHorarios input:checked')].map(c=>c.value);
+  const phone   = document.getElementById("regPhone").value.trim();
+  const puntos  = document.getElementById("regPuntos").value.trim();
   loadPublishers();
   publishers.push({ id: uid(), name, phone, days, horarios: hs, puntos });
   try{
     savePublishers();
-    statusEl.textContent = "¡Listo! Quedaste registrado, " + name + ".";
-    statusEl.className = "status-msg ok";
+    statusEl.textContent="¡Listo! Quedaste registrado, "+name+".";
+    statusEl.className="status-msg ok";
     document.getElementById("regName").value="";
     document.getElementById("regPhone").value="";
     document.getElementById("regPuntos").value="";
     document.querySelectorAll('#regDays input, #regHorarios input').forEach(c=>c.checked=false);
   }catch(e){
-    statusEl.textContent = "Hubo un error guardando tu registro. Intenta de nuevo.";
-    statusEl.className = "status-msg err";
+    statusEl.textContent="Hubo un error guardando tu registro. Intenta de nuevo.";
+    statusEl.className="status-msg err";
   }
 });
 
-// ---------- Public schedule ----------
+// ============================================================
+// VISTA PÚBLICA
+// ============================================================
 let activePuntoIdx = 0;
 
 function renderPublicSchedule(){
   loadSchedule();
   const el = document.getElementById("publicSchedule");
-  if(schedule.length===0){
-    el.innerHTML = "<p class='small'>Aún no hay puntos configurados.</p>";
-    return;
-  }
+  if(schedule.length===0){ el.innerHTML="<p class='small'>Aún no hay puntos configurados.</p>"; return; }
   const tabsHtml = `<div class="punto-tabs">${
     schedule.map((p,i)=>`<div class="punto-tab ${i===activePuntoIdx?'active':''}" onclick="switchPunto(${i})">${p.name}</div>`).join("")
   }</div>`;
-
   const panelsHtml = schedule.map((p,i)=>{
     const diasHtml = DIAS_SEMANA.map(dia=>{
       const slotsDelDia = p.slots.filter(s=>s.day===dia);
@@ -319,57 +363,90 @@ function renderPublicSchedule(){
     }).join("");
     return `<div class="punto-panel ${i===activePuntoIdx?'active':''}">${diasHtml}</div>`;
   }).join("");
-
   el.innerHTML = tabsHtml + panelsHtml;
 }
 
 function switchPunto(idx){ activePuntoIdx=idx; renderPublicSchedule(); }
 window.switchPunto = switchPunto;
 
-// ---------- Admin PIN ----------
-document.getElementById("btnPinEnter").addEventListener("click", ()=>{
-  const val = document.getElementById("pinInput").value.trim();
-  if(val===ADMIN_PIN){
-    document.getElementById("pinGate").classList.add("hidden");
+// ============================================================
+// LOGIN
+// ============================================================
+document.getElementById("btnLogin").addEventListener("click", ()=>{
+  const username = document.getElementById("loginUser").value.trim().toLowerCase();
+  const pass     = document.getElementById("loginPass").value;
+  const user     = USERS[username];
+  if(user && user.pass === pass){
+    currentUser = { username, role: user.role };
+    document.getElementById("loginGate").classList.add("hidden");
     document.getElementById("adminArea").classList.remove("hidden");
     renderAdmin();
   }else{
-    document.getElementById("pinHelp").textContent = "PIN incorrecto.";
+    document.getElementById("loginHelp").textContent = "Usuario o contraseña incorrectos.";
   }
 });
 
+// Enter en los campos de login
+["loginUser","loginPass"].forEach(id=>{
+  document.getElementById(id).addEventListener("keydown", e=>{ if(e.key==="Enter") document.getElementById("btnLogin").click(); });
+});
+
+function cerrarSesion(){
+  currentUser = null;
+  document.getElementById("loginGate").classList.remove("hidden");
+  document.getElementById("adminArea").classList.add("hidden");
+  document.getElementById("loginUser").value="";
+  document.getElementById("loginPass").value="";
+  document.getElementById("loginHelp").textContent="";
+}
+window.cerrarSesion = cerrarSesion;
+
+function mostrarInstruccionesFirebase(){
+  document.getElementById("firebaseInstrucciones").classList.toggle("hidden");
+}
+window.mostrarInstruccionesFirebase = mostrarInstruccionesFirebase;
+
+// ============================================================
+// ADMIN RENDER
+// ============================================================
 function renderAdmin(){
-  loadPublishers();
-  loadSchedule();
-  loadHorarios();
+  loadPublishers(); loadSchedule(); loadHorarios();
+
+  document.getElementById("badgeUser").textContent = currentUser.username;
+
+  // Mostrar/ocultar aviso Firebase
+  document.getElementById("firebaseNote").classList.toggle("hidden", USE_FIREBASE);
+
+  // Mostrar/ocultar sección rangos según rol
+  document.getElementById("seccionRangos").classList.toggle("hidden", currentUser.role !== "super");
+
   renderPublisherList();
-  renderRangos();
+  if(currentUser.role === "super") renderRangos();
   renderPointsEditor();
   rebuildRegHorarios();
 }
 
-// ---------- Publisher list ----------
+// ============================================================
+// LISTA DE PUBLICADORES
+// ============================================================
 function renderPublisherList(){
   const el = document.getElementById("publisherList");
   document.getElementById("pubCount").textContent = publishers.length;
-  if(publishers.length===0){
-    el.innerHTML = "<div class='pub-row small'>Nadie se ha registrado todavía.</div>";
-    return;
-  }
+  if(publishers.length===0){ el.innerHTML="<div class='pub-row small'>Nadie se ha registrado todavía.</div>"; return; }
   el.innerHTML = publishers.map(p=>`
     <div class="pub-row" id="pubrow-${p.id}">
       <div class="pub-info">
-        <strong>${p.name}</strong>${p.phone?" · 📞 "+p.phone:""}<br>
-        <span class="small">${p.days.join(", ")||"(sin días)"} · ${(p.horarios||[]).join(", ")||"(sin horarios)"}${p.puntos?" · prefiere: "+p.puntos:""}</span>
+        <strong>${esc(p.name)}</strong>${p.phone?" · 📞 "+esc(p.phone):""}<br>
+        <span class="small">${(p.days||[]).join(", ")||"(sin días)"} · ${(p.horarios||[]).join(", ")||"(sin horarios)"}${p.puntos?" · prefiere: "+esc(p.puntos):""}</span>
         <div class="edit-form" id="editform-${p.id}">
           <div class="edit-row">
             <div>
               <label style="margin-top:0;">Nombre</label>
-              <input type="text" id="en-${p.id}" value="${p.name}">
+              <input type="text" id="en-${p.id}" value="${esc(p.name)}">
             </div>
             <div>
               <label style="margin-top:0;">Teléfono</label>
-              <input type="tel" id="ep-${p.id}" value="${p.phone||''}">
+              <input type="tel" id="ep-${p.id}" value="${esc(p.phone||'')}">
             </div>
           </div>
           <label style="margin-top:4px;">Días disponibles</label>
@@ -394,32 +471,30 @@ function renderPublisherList(){
   `).join("");
 }
 
-function toggleEdit(id){
-  document.getElementById("editform-"+id).classList.toggle("open");
-}
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function toggleEdit(id){ document.getElementById("editform-"+id).classList.toggle("open"); }
 window.toggleEdit = toggleEdit;
 
 function saveEditPublisher(id){
   const p = publishers.find(x=>x.id===id);
-  p.name = document.getElementById("en-"+id).value.trim() || p.name;
-  p.phone = document.getElementById("ep-"+id).value.trim();
-  p.days = [...document.querySelectorAll(`input[data-edit-day="${id}"]:checked`)].map(c=>c.value);
+  p.name     = document.getElementById("en-"+id).value.trim() || p.name;
+  p.phone    = document.getElementById("ep-"+id).value.trim();
+  p.days     = [...document.querySelectorAll(`input[data-edit-day="${id}"]:checked`)].map(c=>c.value);
   p.horarios = [...document.querySelectorAll(`input[data-edit-hor="${id}"]:checked`)].map(c=>c.value);
-  savePublishers();
-  renderPublisherList();
-  renderPointsEditor();
+  savePublishers(); renderPublisherList(); renderPointsEditor();
 }
 window.saveEditPublisher = saveEditPublisher;
 
 function removePublisher(id){
   publishers = publishers.filter(p=>p.id!==id);
-  savePublishers();
-  renderPublisherList();
-  renderPointsEditor();
+  savePublishers(); renderPublisherList(); renderPointsEditor();
 }
 window.removePublisher = removePublisher;
 
-// ---------- Export CSV ----------
+// ============================================================
+// EXPORTAR CSV
+// ============================================================
 document.getElementById("btnExportExcel").addEventListener("click", ()=>{
   loadPublishers();
   if(publishers.length===0){ alert("No hay publicadores registrados."); return; }
@@ -428,66 +503,135 @@ document.getElementById("btnExportExcel").addEventListener("click", ()=>{
     rows.push([p.name, p.phone||"", (p.days||[]).join("; "), (p.horarios||[]).join("; "), p.puntos||""]);
   });
   const csv = rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\r\n");
-  const blob = new Blob(["﻿"+csv], {type:"text/csv;charset=utf-8;"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a"); a.href=url; a.download="publicadores.csv"; a.click();
-  URL.revokeObjectURL(url);
+  descargar("publicadores.csv", "text/csv;charset=utf-8;", "﻿"+csv);
 });
 
-// ---------- Rangos de horario ----------
+// ============================================================
+// IMPORTAR DESDE EXCEL / CSV
+// ============================================================
+function importarPublicadores(input){
+  const file = input.files[0]; if(!file) return;
+  const statusEl = document.getElementById("importStatus");
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      let rows = [];
+      if(file.name.endsWith(".csv")){
+        rows = parseCsv(e.target.result);
+      } else {
+        // Excel via SheetJS
+        const wb = XLSX.read(e.target.result, {type:"array"});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+      }
+      loadPublishers();
+      let agregados = 0;
+      rows.forEach(row=>{
+        // Buscar columna "nombre" sin importar mayúsculas
+        const keyNombre = Object.keys(row).find(k=>k.toLowerCase().trim()==="nombre");
+        const keyTel    = Object.keys(row).find(k=>k.toLowerCase().trim()==="telefono"||k.toLowerCase().trim()==="teléfono"||k.toLowerCase().trim()==="tel");
+        const keyPuntos = Object.keys(row).find(k=>k.toLowerCase().trim()==="puntos");
+        if(!keyNombre) return;
+        const nombre = String(row[keyNombre]).trim();
+        if(!nombre) return;
+        // Evitar duplicados por nombre exacto
+        if(publishers.some(p=>p.name.toLowerCase()===nombre.toLowerCase())) return;
+        publishers.push({
+          id: uid(),
+          name: nombre,
+          phone: keyTel ? String(row[keyTel]).trim() : "",
+          days: [], horarios: [],
+          puntos: keyPuntos ? String(row[keyPuntos]).trim() : ""
+        });
+        agregados++;
+      });
+      savePublishers();
+      renderPublisherList();
+      renderPointsEditor();
+      statusEl.textContent = agregados + " publicador(es) importados correctamente.";
+      statusEl.className = "status-msg ok";
+    }catch(err){
+      statusEl.textContent = "Error al leer el archivo: " + err.message;
+      statusEl.className = "status-msg err";
+    }
+    input.value = "";
+  };
+  if(file.name.endsWith(".csv")) reader.readAsText(file, "UTF-8");
+  else reader.readAsArrayBuffer(file);
+}
+window.importarPublicadores = importarPublicadores;
+
+function parseCsv(text){
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  if(!lines.length) return [];
+  const headers = splitCsvLine(lines[0]);
+  return lines.slice(1).map(line=>{
+    const vals = splitCsvLine(line);
+    const obj = {};
+    headers.forEach((h,i)=>{ obj[h.trim()] = (vals[i]||"").trim(); });
+    return obj;
+  });
+}
+
+function splitCsvLine(line){
+  const result = []; let cur = ""; let inQ = false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(c==='"'){ inQ=!inQ; }
+    else if(c===','&&!inQ){ result.push(cur); cur=""; }
+    else{ cur+=c; }
+  }
+  result.push(cur);
+  return result;
+}
+
+// ============================================================
+// RANGOS DE HORARIO (solo super)
+// ============================================================
 function renderRangos(){
   const el = document.getElementById("rangosContainer");
-  if(horarios.length===0){
-    el.innerHTML = "<p class='small'>Sin rangos. Agrega uno abajo.</p>";
-    return;
-  }
+  if(horarios.length===0){ el.innerHTML="<p class='small'>Sin rangos.</p>"; return; }
   el.innerHTML = horarios.map((h,i)=>`
     <div class="rango-row">
-      <input type="text" value="${h}" onchange="updateRango(${i}, this.value)" placeholder="Ej: 9:00 - 11:00">
+      <input type="text" value="${esc(h)}" onchange="updateRango(${i},this.value)" placeholder="Ej: 9:00 - 11:00">
       <button class="danger" style="padding:6px 8px;" onclick="removeRango(${i})">✕</button>
     </div>
   `).join("");
 }
 
-function updateRango(i, val){ horarios[i] = val; }
+function updateRango(i,val){ horarios[i]=val; }
 window.updateRango = updateRango;
 
 function addRango(){
   horarios.push(""); renderRangos();
-  // foco en el último input
   const inputs = document.querySelectorAll("#rangosContainer .rango-row input");
   if(inputs.length) inputs[inputs.length-1].focus();
 }
 window.addRango = addRango;
 
-function removeRango(i){
-  horarios.splice(i,1); renderRangos();
-}
+function removeRango(i){ horarios.splice(i,1); renderRangos(); }
 window.removeRango = removeRango;
 
 document.getElementById("btnSaveRangos").addEventListener("click", ()=>{
   horarios = horarios.map(h=>h.trim()).filter(Boolean);
-  saveHorarios();
-  renderRangos();
-  renderPointsEditor();
-  rebuildRegHorarios();
+  saveHorarios(); renderRangos(); renderPointsEditor(); rebuildRegHorarios();
   const st = document.getElementById("rangosStatus");
-  st.textContent = "Rangos guardados correctamente.";
-  st.className = "status-msg ok";
+  st.textContent="Rangos guardados correctamente."; st.className="status-msg ok";
 });
 
-// ---------- Points editor ----------
+// ============================================================
+// PUNTOS
+// ============================================================
 function publisherOptions(selected){
   let opts = `<option value="">— vacío —</option>`;
-  opts += publishers.map(p=>`<option value="${p.name}" ${p.name===selected?"selected":""}>${p.name}</option>`).join("");
-  if(selected && !publishers.some(p=>p.name===selected)){
-    opts += `<option value="${selected}" selected>${selected} (no registrado)</option>`;
-  }
+  opts += publishers.map(p=>`<option value="${esc(p.name)}" ${p.name===selected?"selected":""}>${esc(p.name)}</option>`).join("");
+  if(selected && !publishers.some(p=>p.name===selected))
+    opts += `<option value="${esc(selected)}" selected>${esc(selected)} (no registrado)</option>`;
   return opts;
 }
 
 function horarioOptions(selected){
-  return horarios.map(h=>`<option ${h===selected?"selected":""}>${h}</option>`).join("");
+  return horarios.map(h=>`<option ${h===selected?"selected":""}>${esc(h)}</option>`).join("");
 }
 
 function renderPointsEditor(){
@@ -495,18 +639,16 @@ function renderPointsEditor(){
   el.innerHTML = schedule.map(point=>`
     <div class="point-card" data-point="${point.id}">
       <div class="point-head">
-        <input type="text" value="${point.name}" onchange="renamePoint('${point.id}', this.value)">
+        <input type="text" value="${esc(point.name)}" onchange="renamePoint('${point.id}',this.value)">
         <button class="danger" onclick="removePoint('${point.id}')">Eliminar punto</button>
       </div>
-      <div class="slots">
-        ${point.slots.map(s=>renderSlotRow(point.id, s)).join("")}
-      </div>
+      <div class="slots">${point.slots.map(s=>renderSlotRow(point.id,s)).join("")}</div>
       <button class="secondary" style="margin-top:4px;" onclick="addSlot('${point.id}')">+ Agregar horario a este punto</button>
     </div>
   `).join("");
 }
 
-function renderSlotRow(pointId, slot){
+function renderSlotRow(pointId,slot){
   return `
     <div class="slot-row" data-slot="${slot.id}">
       <select onchange="updateSlot('${pointId}','${slot.id}','day',this.value)">
@@ -528,41 +670,41 @@ function renderSlotRow(pointId, slot){
 }
 
 function findPoint(id){ return schedule.find(p=>p.id===id); }
-
-function renamePoint(id, val){ findPoint(id).name = val; }
+function renamePoint(id,val){ findPoint(id).name=val; }
 window.renamePoint = renamePoint;
-
 function removePoint(id){ schedule=schedule.filter(p=>p.id!==id); renderPointsEditor(); }
 window.removePoint = removePoint;
 
 document.getElementById("btnAddPoint").addEventListener("click", ()=>{
-  schedule.push({ id: uid(), name: "Nuevo punto", slots: [] });
+  schedule.push({id:uid(),name:"Nuevo punto",slots:[]});
   renderPointsEditor();
 });
 
 function addSlot(pointId){
-  findPoint(pointId).slots.push({ id: uid(), day: DIAS[0], horario: horarios[0]||"", participants:["","","","",""] });
+  findPoint(pointId).slots.push({id:uid(),day:DIAS[0],horario:horarios[0]||"",participants:["","","","",""]});
   renderPointsEditor();
 }
 window.addSlot = addSlot;
 
-function removeSlot(pointId, slotId){
+function removeSlot(pointId,slotId){
   findPoint(pointId).slots = findPoint(pointId).slots.filter(s=>s.id!==slotId);
   renderPointsEditor();
 }
 window.removeSlot = removeSlot;
 
-function updateSlot(pointId, slotId, field, value){
-  findPoint(pointId).slots.find(s=>s.id===slotId)[field] = value;
+function updateSlot(pointId,slotId,field,value){
+  findPoint(pointId).slots.find(s=>s.id===slotId)[field]=value;
 }
 window.updateSlot = updateSlot;
 
-function updateParticipant(pointId, slotId, idx, value){
-  findPoint(pointId).slots.find(s=>s.id===slotId).participants[idx] = value;
+function updateParticipant(pointId,slotId,idx,value){
+  findPoint(pointId).slots.find(s=>s.id===slotId).participants[idx]=value;
 }
 window.updateParticipant = updateParticipant;
 
-// ---------- Save / Publish ----------
+// ============================================================
+// GUARDAR / PUBLICAR
+// ============================================================
 document.getElementById("btnSaveSchedule").addEventListener("click", ()=>{
   const st = document.getElementById("adminStatus");
   try{ saveSchedule(); st.textContent="Cambios guardados correctamente."; st.className="status-msg ok"; }
@@ -570,18 +712,79 @@ document.getElementById("btnSaveSchedule").addEventListener("click", ()=>{
 });
 
 document.getElementById("btnPublish").addEventListener("click", ()=>{
-  saveSchedule();
-  renderPublicSchedule();
+  saveSchedule(); renderPublicSchedule();
   const st = document.getElementById("adminStatus");
-  st.textContent="Horario publicado — ya es visible en la vista pública.";
-  st.className="status-msg ok";
+  st.textContent="Horario publicado — ya es visible en la vista pública."; st.className="status-msg ok";
 });
 
-// ---------- Init ----------
+// ============================================================
+// RESPALDO Y RESTAURACIÓN
+// ============================================================
+document.getElementById("btnRespaldo").addEventListener("click", ()=>{
+  loadPublishers(); loadSchedule(); loadHorarios();
+  const respaldo = {
+    version: 1,
+    fecha: new Date().toISOString(),
+    publishers,
+    schedule,
+    horarios
+  };
+  const fecha = new Date().toISOString().slice(0,10);
+  descargar(`respaldo-horario-${fecha}.json`, "application/json", JSON.stringify(respaldo, null, 2));
+  const st = document.getElementById("respaldoStatus");
+  st.textContent = "Respaldo generado correctamente."; st.className = "status-msg ok";
+});
+
+function restaurarRespaldo(input){
+  const file = input.files[0]; if(!file) return;
+  const st = document.getElementById("respaldoStatus");
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.version || !data.publishers || !data.schedule || !data.horarios)
+        throw new Error("El archivo no es un respaldo válido.");
+
+      const confirmar = confirm(
+        `¿Restaurar respaldo del ${data.fecha ? data.fecha.slice(0,10) : "archivo"}?\n\n` +
+        `Esto reemplazará:\n• ${data.publishers.length} publicadores\n• ${data.schedule.length} puntos\n• ${data.horarios.length} rangos de horario\n\n` +
+        `Los datos actuales serán reemplazados.`
+      );
+      if(!confirmar){ input.value=""; return; }
+
+      publishers = data.publishers;
+      schedule   = data.schedule;
+      horarios   = data.horarios;
+      savePublishers(); saveSchedule(); saveHorarios();
+      renderAdmin();
+      renderPublicSchedule();
+      st.textContent = "Respaldo restaurado correctamente."; st.className="status-msg ok";
+    }catch(err){
+      st.textContent = "Error al restaurar: " + err.message; st.className="status-msg err";
+    }
+    input.value = "";
+  };
+  reader.readAsText(file, "UTF-8");
+}
+window.restaurarRespaldo = restaurarRespaldo;
+
+// ============================================================
+// UTILIDADES
+// ============================================================
+function descargar(nombre, tipo, contenido){
+  const blob = new Blob([contenido], {type: tipo});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href=url; a.download=nombre; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// INIT
+// ============================================================
 loadHorarios();
 rebuildRegHorarios();
 renderPublicSchedule();
 </script>
-
 </body>
 </html>
