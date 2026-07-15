@@ -74,6 +74,9 @@
   .edit-row input{font-size:0.82rem;padding:6px 8px;}
   .actions-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
   .small{font-size:0.75rem;color:var(--muted);}
+  .cat-tabs{display:flex;gap:8px;margin-bottom:14px;}
+  .cat-tab{flex:1;padding:9px 12px;text-align:center;background:#f3f1ea;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:0.88rem;font-weight:700;color:var(--muted);}
+  .cat-tab.active{background:var(--accent-dark);color:#fff;border-color:var(--accent-dark);}
   .punto-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
   .punto-tab{padding:7px 14px;border-radius:20px;border:1px solid var(--line);background:#f3f1ea;color:var(--muted);cursor:pointer;font-size:0.83rem;font-weight:600;}
   .punto-tab.active{background:var(--accent-dark);color:#fff;border-color:var(--accent-dark);}
@@ -463,6 +466,7 @@ function toArray(v){ if(!v) return []; return Array.isArray(v) ? v : Object.valu
 
 function normalizeSchedule(raw){
   return toArray(raw).filter(Boolean).map(point=>({
+    tipo: "etapa",
     ...point,
     slots: toArray(point.slots).filter(Boolean).map(slot=>({
       ...slot,
@@ -584,7 +588,7 @@ async function cargarTodo(){
 }
 
 function defaultSchedule(){
-  return [1,2,3,4,5].map(n=>({ id: uid(), name: "Punto " + n, slots: [] }));
+  return [1,2,3,4,5].map(n=>({ id: uid(), name: "Punto " + n, tipo: "etapa", slots: [] }));
 }
 
 // ============================================================
@@ -699,33 +703,55 @@ document.getElementById("btnRegister").addEventListener("click", async ()=>{
 // ============================================================
 // VISTA PÚBLICA
 // ============================================================
-let activePuntoIdx = 0;
+let activeCategoria = "etapa";
+let activePuntoId   = null;
 
 async function renderPublicSchedule(){
   await cargarSchedule();
   const el = document.getElementById("publicSchedule");
   if(!el) return;
   if(!schedule || schedule.length===0){ el.innerHTML="<p class='small'>Aún no hay puntos configurados.</p>"; return; }
-  const tabsHtml = `<div class="punto-tabs">${
-    schedule.map((p,i)=>`<div class="punto-tab ${i===activePuntoIdx?'active':''}" onclick="switchPunto(${i})">${esc(p.name)}</div>`).join("")
-  }</div>`;
-  const panelsHtml = schedule.map((p,i)=>{
-    const diasHtml = DIAS_SEMANA.map(dia=>{
-      const slotsDelDia = (p.slots||[]).filter(s=>s.day===dia);
-      const contenido = slotsDelDia.length
-        ? slotsDelDia.map(s=>{
-            const personas = (s.participants||[]).filter(Boolean).join(", ");
-            return `<div class="dia-slot-item">${esc(s.horario)}${personas?" — "+esc(personas):" — <span class='sin-datos'>Sin asignar</span>"}</div>`;
-          }).join("")
-        : `<span class="sin-datos">Sin horario</span>`;
-      return `<div class="dia-row"><span class="dia-label">${dia}</span><div class="dia-slots">${contenido}</div></div>`;
+
+  const puntosDeCat = schedule.filter(p=>(p.tipo||"etapa")===activeCategoria);
+  if(!activePuntoId || !puntosDeCat.find(p=>p.id===activePuntoId)){
+    activePuntoId = puntosDeCat.length ? puntosDeCat[0].id : null;
+  }
+
+  const catTabsHtml = `<div class="cat-tabs">
+    <div class="cat-tab ${activeCategoria==="etapa"?"active":""}" onclick="switchCategoria('etapa')">📍 Etapas</div>
+    <div class="cat-tab ${activeCategoria==="centro"?"active":""}" onclick="switchCategoria('centro')">🏬 Centros comerciales</div>
+  </div>`;
+
+  let contenidoCat = "";
+  if(puntosDeCat.length===0){
+    contenidoCat = `<p class='small sin-datos'>No hay puntos en esta categoría.</p>`;
+  } else {
+    const subTabsHtml = `<div class="punto-tabs">${
+      puntosDeCat.map(p=>`<div class="punto-tab ${p.id===activePuntoId?'active':''}" onclick="switchPunto('${p.id}')">${esc(p.name)}</div>`).join("")
+    }</div>`;
+    const panelHtml = puntosDeCat.map(p=>{
+      const diasHtml = DIAS_SEMANA.map(dia=>{
+        const slotsDelDia = (p.slots||[]).filter(s=>s.day===dia);
+        const contenido = slotsDelDia.length
+          ? slotsDelDia.map(s=>{
+              const personas = (s.participants||[]).filter(Boolean).join(", ");
+              return `<div class="dia-slot-item">${esc(s.horario)}${personas?" — "+esc(personas):" — <span class='sin-datos'>Sin asignar</span>"}</div>`;
+            }).join("")
+          : `<span class="sin-datos">Sin horario</span>`;
+        return `<div class="dia-row"><span class="dia-label">${dia}</span><div class="dia-slots">${contenido}</div></div>`;
+      }).join("");
+      return `<div class="punto-panel ${p.id===activePuntoId?'active':''}">${diasHtml}</div>`;
     }).join("");
-    return `<div class="punto-panel ${i===activePuntoIdx?'active':''}">${diasHtml}</div>`;
-  }).join("");
-  el.innerHTML = tabsHtml + panelsHtml;
+    contenidoCat = subTabsHtml + panelHtml;
+  }
+
+  el.innerHTML = catTabsHtml + contenidoCat;
 }
 
-function switchPunto(idx){ activePuntoIdx=idx; renderPublicSchedule(); }
+function switchCategoria(cat){ activeCategoria=cat; activePuntoId=null; renderPublicSchedule(); }
+window.switchCategoria = switchCategoria;
+
+function switchPunto(id){ activePuntoId=id; renderPublicSchedule(); }
 window.switchPunto = switchPunto;
 
 // ============================================================
@@ -987,7 +1013,11 @@ function renderPointsEditor(){
     <div class="point-card" data-point="${point.id}">
       <div class="point-head">
         <input type="text" value="${esc(point.name)}" onchange="renamePoint('${point.id}',this.value)">
-        <button class="danger" onclick="removePoint('${point.id}')">Eliminar punto</button>
+        <select style="width:auto;padding:6px 10px;font-size:0.82rem;" onchange="updatePointTipo('${point.id}',this.value)">
+          <option value="etapa" ${(point.tipo||"etapa")==="etapa"?"selected":""}>📍 Etapa</option>
+          <option value="centro" ${point.tipo==="centro"?"selected":""}>🏬 Centro comercial</option>
+        </select>
+        <button class="danger" onclick="removePoint('${point.id}')">Eliminar</button>
       </div>
       <div class="slots">${(point.slots||[]).map(s=>renderSlotRow(point.id,s)).join("")}</div>
       <button class="secondary" style="margin-top:4px;" onclick="addSlot('${point.id}')">+ Agregar horario a este punto</button>
@@ -1005,8 +1035,9 @@ function renderSlotRow(pid,slot){
 
 function findPoint(id){ return schedule.find(p=>p.id===id); }
 function renamePoint(id,val){ findPoint(id).name=val; } window.renamePoint=renamePoint;
+function updatePointTipo(id,val){ findPoint(id).tipo=val; } window.updatePointTipo=updatePointTipo;
 function removePoint(id){ schedule=schedule.filter(p=>p.id!==id); renderPointsEditor(); } window.removePoint=removePoint;
-document.getElementById("btnAddPoint").addEventListener("click",()=>{ schedule.push({id:uid(),name:"Nuevo punto",slots:[]}); renderPointsEditor(); });
+document.getElementById("btnAddPoint").addEventListener("click",()=>{ schedule.push({id:uid(),name:"Nuevo punto",tipo:"etapa",slots:[]}); renderPointsEditor(); });
 function addSlot(pid){ findPoint(pid).slots.push({id:uid(),day:DIAS[0],horario:horarios[0]||"",participants:["","","","",""]}); renderPointsEditor(); } window.addSlot=addSlot;
 function removeSlot(pid,sid){ findPoint(pid).slots=findPoint(pid).slots.filter(s=>s.id!==sid); renderPointsEditor(); } window.removeSlot=removeSlot;
 function updateSlot(pid,sid,f,v){ findPoint(pid).slots.find(s=>s.id===sid)[f]=v; } window.updateSlot=updateSlot;
