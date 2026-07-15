@@ -298,14 +298,27 @@ function initFirebase(config){
   }
 }
 
+const HARDCODED_FB_CONFIG = {
+  apiKey: "AIzaSyBheANp9mCTgR6Vlcf8_k6PBn108aw-RF4",
+  authDomain: "publica-da7a3.firebaseapp.com",
+  databaseURL: "https://publica-da7a3-default-rtdb.firebaseio.com",
+  projectId: "publica-da7a3",
+  storageBucket: "publica-da7a3.firebasestorage.app",
+  messagingSenderId: "694156936801",
+  appId: "1:694156936801:web:d707b62bccb6e4504e0c20",
+  measurementId: "G-4S1N3QM8K4"
+};
+
 function tryLoadFirebaseConfig(){
+  // Primero intenta config guardada en localStorage, luego la hardcodeada
   const raw = localStorage.getItem("fbConfig");
-  if(!raw) return false;
-  try{
-    const config = JSON.parse(raw);
-    if(!config.databaseURL) return false;
-    return initFirebase(config);
-  }catch(e){ return false; }
+  if(raw){
+    try{
+      const config = JSON.parse(raw);
+      if(config.databaseURL) return initFirebase(config);
+    }catch(e){}
+  }
+  return initFirebase(HARDCODED_FB_CONFIG);
 }
 
 function actualizarFbStatus(){
