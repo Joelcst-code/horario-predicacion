@@ -399,8 +399,19 @@ async function fbSet(path, val){
 }
 
 async function cargarPublishers(){
-  if(db){ const v = await fbGet("publishers"); publishers = v ? Object.values(v) : []; }
-  else   { publishers = ls_get("publishers") || []; }
+  if(db){
+    const v = await fbGet("publishers");
+    if(v){
+      publishers = Object.values(v);
+    } else {
+      // Firebase vacío: migrar desde localStorage si hay datos
+      const local = ls_get("publishers") || [];
+      publishers = local;
+      if(local.length > 0) await guardarPublishers();
+    }
+  } else {
+    publishers = ls_get("publishers") || [];
+  }
 }
 async function guardarPublishers(){
   if(db){
@@ -412,9 +423,20 @@ async function guardarPublishers(){
 }
 
 async function cargarSchedule(){
-  if(db){ const v = await fbGet("schedule"); schedule = v || null; }
-  else   { schedule = ls_get("schedule"); }
-  if(!schedule){ schedule = defaultSchedule(); await guardarSchedule(); }
+  if(db){
+    const v = await fbGet("schedule");
+    if(v){
+      schedule = v;
+    } else {
+      // Firebase vacío: migrar desde localStorage
+      const local = ls_get("schedule");
+      schedule = local || defaultSchedule();
+      await guardarSchedule();
+    }
+  } else {
+    schedule = ls_get("schedule");
+    if(!schedule){ schedule = defaultSchedule(); await guardarSchedule(); }
+  }
 }
 async function guardarSchedule(){
   if(db) await fbSet("schedule", schedule);
@@ -422,9 +444,19 @@ async function guardarSchedule(){
 }
 
 async function cargarHorarios(){
-  if(db){ const v = await fbGet("horarios"); horarios = v || null; }
-  else   { horarios = ls_get("horarios"); }
-  if(!horarios){ horarios = DEFAULT_HORARIOS.slice(); await guardarHorarios(); }
+  if(db){
+    const v = await fbGet("horarios");
+    if(v){
+      horarios = v;
+    } else {
+      // Firebase vacío: migrar desde localStorage
+      const local = ls_get("horarios");
+      horarios = local || DEFAULT_HORARIOS.slice();
+      await guardarHorarios();
+    }
+  } else {
+    horarios = ls_get("horarios") || DEFAULT_HORARIOS.slice();
+  }
 }
 async function guardarHorarios(){
   if(db) await fbSet("horarios", horarios);
@@ -432,7 +464,10 @@ async function guardarHorarios(){
 }
 
 async function cargarTodo(){
-  await Promise.all([cargarPublishers(), cargarSchedule(), cargarHorarios()]);
+  // Carga secuencial para garantizar que publishers esté listo antes de renderizar
+  await cargarPublishers();
+  await cargarSchedule();
+  await cargarHorarios();
 }
 
 function defaultSchedule(){
