@@ -465,16 +465,19 @@ async function fbSet(path, val){
 function toArray(v){ if(!v) return []; return Array.isArray(v) ? v : Object.values(v); }
 
 function normalizeSchedule(raw){
-  return toArray(raw).filter(Boolean).map(point=>({
-    tipo: "etapa",
-    ...point,
-    slots: toArray(point.slots).filter(Boolean).map(slot=>({
-      ...slot,
-      participants: toArray(slot.participants).length
-        ? toArray(slot.participants)
-        : ["","","","",""]
-    }))
-  }));
+  return toArray(raw).filter(Boolean).map(point=>{
+    const autoTipo = centros.some(c=>c.toLowerCase()===(point.name||"").toLowerCase()) ? "centro" : "etapa";
+    return {
+      ...point,
+      tipo: point.tipo || autoTipo,
+      slots: toArray(point.slots).filter(Boolean).map(slot=>({
+        ...slot,
+        participants: toArray(slot.participants).length
+          ? toArray(slot.participants)
+          : ["","","","",""]
+      }))
+    };
+  });
 }
 
 function normalizePublishers(raw){
@@ -581,10 +584,10 @@ async function guardarCentros(){
 
 async function cargarTodo(){
   await cargarPublishers();
-  await cargarSchedule();
   await cargarHorarios();
   await cargarEtapas();
   await cargarCentros();
+  await cargarSchedule(); // después de centros para que normalizeSchedule pueda auto-clasificar
 }
 
 function defaultSchedule(){
