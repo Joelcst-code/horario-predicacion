@@ -138,6 +138,11 @@
 
   <!-- ============ VISTA PÚBLICA ============ -->
   <section id="tab-publico" class="panel">
+    <h2>📋 Horario actual</h2>
+    <div id="publicSchedule"></div>
+
+    <hr class="div">
+
     <h2>✍️ Regístrate - 2 Cor. 9:7</h2>
     <p class="small">Llena tus datos para que el hermano/hermana encargado del horario pueda asignarte a un punto. Esto no te asigna automáticamente — solo indica tu disponibilidad.</p>
 
@@ -1072,6 +1077,7 @@ function descargar(nombre,tipo,contenido){
   rebuildRegHorarios();
   rebuildRegEtapas();
   rebuildRegCentros();
+  await renderPublicSchedule();
   document.getElementById("loadingOverlay").style.display="none";
 })();
 </script>
