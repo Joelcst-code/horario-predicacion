@@ -79,14 +79,28 @@
   .pub-list div:last-child{border-bottom:none;}
   .actions-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;}
   .small{font-size:0.75rem; color:var(--muted);}
-  .loading{text-align:center; padding:30px; color:var(--muted);}
+  /* Punto tabs en vista pública */
+  .punto-tabs{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;}
+  .punto-tab{
+    padding:7px 14px; border-radius:20px; border:1px solid var(--line);
+    background:#f3f1ea; color:var(--muted); cursor:pointer; font-size:0.83rem; font-weight:600;
+  }
+  .punto-tab.active{background:var(--accent-dark); color:#fff; border-color:var(--accent-dark);}
+  .punto-panel{display:none;}
+  .punto-panel.active{display:block;}
+  .dia-row{display:flex; align-items:baseline; gap:8px; padding:6px 0; border-bottom:1px solid var(--line);}
+  .dia-row:last-child{border-bottom:none;}
+  .dia-label{min-width:80px; font-weight:700; font-size:0.82rem; color:var(--accent-dark);}
+  .dia-slots{font-size:0.82rem; color:var(--ink);}
+  .dia-slot-item{margin-bottom:2px;}
+  .sin-datos{font-size:0.8rem; color:var(--muted); font-style:italic;}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🕊️ Servicio del Campo — Horario Semanal</h1>
-  <p>Congregación · Predicación pública</p>
+  <h1>Servicio del Campo — Horario Semanal</h1>
+  <p>Joya oeste · Predicación pública</p>
 </header>
 
 <div class="tabs">
@@ -99,7 +113,7 @@
   <!-- ============ VISTA PÚBLICA ============ -->
   <section id="tab-publico" class="panel">
     <h2>📋 Horario actual</h2>
-    <div id="publicSchedule" class="loading">Cargando horario...</div>
+    <div id="publicSchedule"></div>
 
     <hr style="margin:22px 0; border:none; border-top:1px solid var(--line);">
 
@@ -132,7 +146,7 @@
 
     <div id="pinGate" class="pin-gate">
       <h2>🔒 Acceso administrador</h2>
-      <p class="small">Ingresa el PIN para editar el horario. (Esto es solo un filtro simple, no es seguridad real — cualquiera con el PIN puede entrar.)</p>
+      <p class="small">Ingresa el PIN para editar el horario.</p>
       <input type="text" id="pinInput" placeholder="PIN" style="text-align:center; margin-bottom:10px;">
       <button id="btnPinEnter">Entrar</button>
       <p class="small" id="pinHelp" style="margin-top:10px;"></p>
@@ -150,7 +164,7 @@
 
       <div class="actions-row">
         <button id="btnSaveSchedule">💾 Guardar cambios</button>
-        <button id="btnPublish" class="secondary">📤 Marcar como publicado (solo lectura para todos)</button>
+        <button id="btnPublish" class="secondary">📤 Publicar horario</button>
       </div>
       <div id="adminStatus" class="status-msg"></div>
     </div>
@@ -160,13 +174,39 @@
 
 <script>
 const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const DIAS_SEMANA = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
 const HORARIOS = ["6:30 - 8:30","9:00 - 11:00","16:00 - 18:00","18:00 - 20:00","20:00 - 21:30"];
-const ADMIN_PIN = "1234"; // cámbialo por el que quieras usar en tu congregación
+const ADMIN_PIN = "1234";
 
 let publishers = [];
-let schedule = []; // [{id, name, slots:[{id, day, horario, participants:[names]}]}]
+let schedule = [];
 
 function uid(){ return Math.random().toString(36).slice(2,9); }
+
+// ---------- localStorage helpers ----------
+function loadPublishers(){
+  try{ publishers = JSON.parse(localStorage.getItem("publishers")||"[]"); }
+  catch(e){ publishers = []; }
+}
+function savePublishers(){
+  localStorage.setItem("publishers", JSON.stringify(publishers));
+}
+function loadSchedule(){
+  try{
+    const raw = localStorage.getItem("schedule");
+    schedule = raw ? JSON.parse(raw) : null;
+  }catch(e){ schedule = null; }
+  if(!schedule){
+    schedule = defaultSchedule();
+    saveSchedule();
+  }
+}
+function saveSchedule(){
+  localStorage.setItem("schedule", JSON.stringify(schedule));
+}
+function defaultSchedule(){
+  return [1,2,3,4,5].map(n=>({ id: uid(), name: "Punto " + n, slots: [] }));
+}
 
 // ---------- Tabs ----------
 document.querySelectorAll(".tab").forEach(t=>{
@@ -187,39 +227,8 @@ function buildChecks(container, items, prefix){
 buildChecks(document.getElementById("regDays"), DIAS, "day");
 buildChecks(document.getElementById("regHorarios"), HORARIOS, "horario");
 
-// ---------- Storage helpers ----------
-async function loadPublishers(){
-  try{
-    const res = await window.storage.get("publishers", true);
-    publishers = res ? JSON.parse(res.value) : [];
-  }catch(e){ publishers = []; }
-}
-async function savePublishers(){
-  await window.storage.set("publishers", JSON.stringify(publishers), true);
-}
-async function loadSchedule(){
-  try{
-    const res = await window.storage.get("schedule", true);
-    schedule = res ? JSON.parse(res.value) : null;
-  }catch(e){ schedule = null; }
-  if(!schedule){
-    schedule = defaultSchedule();
-    await saveSchedule();
-  }
-}
-async function saveSchedule(){
-  await window.storage.set("schedule", JSON.stringify(schedule), true);
-}
-function defaultSchedule(){
-  return [1,2,3,4,5].map((n,idx)=>({
-    id: uid(),
-    name: "Punto " + n,
-    slots: []
-  }));
-}
-
 // ---------- Register publisher ----------
-document.getElementById("btnRegister").addEventListener("click", async ()=>{
+document.getElementById("btnRegister").addEventListener("click", ()=>{
   const name = document.getElementById("regName").value.trim();
   const statusEl = document.getElementById("regStatus");
   if(!name){
@@ -232,10 +241,10 @@ document.getElementById("btnRegister").addEventListener("click", async ()=>{
   const phone = document.getElementById("regPhone").value.trim();
   const puntos = document.getElementById("regPuntos").value.trim();
 
-  await loadPublishers();
+  loadPublishers();
   publishers.push({ id: uid(), name, phone, days, horarios, puntos });
   try{
-    await savePublishers();
+    savePublishers();
     statusEl.textContent = "¡Listo! Quedaste registrado, " + name + ".";
     statusEl.className = "status-msg ok";
     document.getElementById("regName").value="";
@@ -248,29 +257,46 @@ document.getElementById("btnRegister").addEventListener("click", async ()=>{
   }
 });
 
-// ---------- Public schedule view (read-only) ----------
-async function renderPublicSchedule(){
+// ---------- Public schedule view ----------
+let activePuntoIdx = 0;
+
+function renderPublicSchedule(){
+  loadSchedule();
   const el = document.getElementById("publicSchedule");
-  await loadSchedule();
   if(schedule.length===0){
     el.innerHTML = "<p class='small'>Aún no hay puntos configurados.</p>";
     return;
   }
-  el.innerHTML = schedule.map(p=>{
-    const rows = p.slots.length ? p.slots.map(s=>`
-      <tr>
-        <td>${s.day}</td>
-        <td>${s.horario}</td>
-        <td>${s.participants.filter(Boolean).join(", ") || "<span class='small'>Sin asignar</span>"}</td>
-      </tr>
-    `).join("") : `<tr><td colspan="3" class="small">Sin horarios en este punto todavía</td></tr>`;
-    return `
-      <div class="point-card">
-        <h3 style="margin:0 0 8px; color:var(--accent-dark);">📍 ${p.name}</h3>
-        <table><thead><tr><th>Día</th><th>Horario</th><th>Participantes</th></tr></thead><tbody>${rows}</tbody></table>
-      </div>`;
+
+  // Tabs de puntos
+  const tabsHtml = `<div class="punto-tabs">${
+    schedule.map((p,i)=>`<div class="punto-tab ${i===activePuntoIdx?'active':''}" onclick="switchPunto(${i})">${p.name}</div>`).join("")
+  }</div>`;
+
+  // Panel de cada punto
+  const panelsHtml = schedule.map((p,i)=>{
+    const diasHtml = DIAS_SEMANA.map(dia=>{
+      const slotsDelDia = p.slots.filter(s=>s.day===dia);
+      const contenido = slotsDelDia.length
+        ? slotsDelDia.map(s=>{
+            const personas = s.participants.filter(Boolean).join(", ");
+            return `<div class="dia-slot-item">${s.horario}${personas ? " — " + personas : " — <span class='sin-datos'>Sin asignar</span>"}</div>`;
+          }).join("")
+        : `<span class="sin-datos">Sin horario</span>`;
+      return `<div class="dia-row"><span class="dia-label">${dia}</span><div class="dia-slots">${contenido}</div></div>`;
+    }).join("");
+
+    return `<div class="punto-panel ${i===activePuntoIdx?'active':''}" id="punto-panel-${i}">${diasHtml}</div>`;
   }).join("");
+
+  el.innerHTML = tabsHtml + panelsHtml;
 }
+
+function switchPunto(idx){
+  activePuntoIdx = idx;
+  renderPublicSchedule();
+}
+window.switchPunto = switchPunto;
 
 // ---------- Admin PIN ----------
 document.getElementById("btnPinEnter").addEventListener("click", ()=>{
@@ -285,9 +311,9 @@ document.getElementById("btnPinEnter").addEventListener("click", ()=>{
 });
 
 // ---------- Admin render ----------
-async function renderAdmin(){
-  await loadPublishers();
-  await loadSchedule();
+function renderAdmin(){
+  loadPublishers();
+  loadSchedule();
   renderPublisherList();
   renderPointsEditor();
 }
@@ -306,11 +332,12 @@ function renderPublisherList(){
   `).join("");
 }
 
-async function removePublisher(id){
+function removePublisher(id){
+  loadPublishers();
   publishers = publishers.filter(p=>p.id!==id);
-  await savePublishers();
+  savePublishers();
   renderPublisherList();
-  renderPointsEditor(); // dropdown options change
+  renderPointsEditor();
 }
 window.removePublisher = removePublisher;
 
@@ -362,9 +389,7 @@ function renderSlotRow(pointId, slot){
 
 function findPoint(id){ return schedule.find(p=>p.id===id); }
 
-function renamePoint(id, val){
-  findPoint(id).name = val;
-}
+function renamePoint(id, val){ findPoint(id).name = val; }
 window.renamePoint = renamePoint;
 
 function removePoint(id){
@@ -373,11 +398,10 @@ function removePoint(id){
 }
 window.removePoint = removePoint;
 
-function addPointFn(){
+document.getElementById("btnAddPoint").addEventListener("click", ()=>{
   schedule.push({ id: uid(), name: "Nuevo punto", slots: [] });
   renderPointsEditor();
-}
-document.getElementById("btnAddPoint").addEventListener("click", addPointFn);
+});
 
 function addSlot(pointId){
   findPoint(pointId).slots.push({ id: uid(), day: DIAS[0], horario: HORARIOS[0], participants:["","","","",""] });
@@ -393,24 +417,22 @@ function removeSlot(pointId, slotId){
 window.removeSlot = removeSlot;
 
 function updateSlot(pointId, slotId, field, value){
-  const p = findPoint(pointId);
-  const s = p.slots.find(s=>s.id===slotId);
+  const s = findPoint(pointId).slots.find(s=>s.id===slotId);
   s[field] = value;
 }
 window.updateSlot = updateSlot;
 
 function updateParticipant(pointId, slotId, idx, value){
-  const p = findPoint(pointId);
-  const s = p.slots.find(s=>s.id===slotId);
+  const s = findPoint(pointId).slots.find(s=>s.id===slotId);
   s.participants[idx] = value;
 }
 window.updateParticipant = updateParticipant;
 
 // ---------- Save / Publish ----------
-document.getElementById("btnSaveSchedule").addEventListener("click", async ()=>{
+document.getElementById("btnSaveSchedule").addEventListener("click", ()=>{
   const statusEl = document.getElementById("adminStatus");
   try{
-    await saveSchedule();
+    saveSchedule();
     statusEl.textContent = "Cambios guardados correctamente.";
     statusEl.className = "status-msg ok";
   }catch(e){
@@ -419,8 +441,8 @@ document.getElementById("btnSaveSchedule").addEventListener("click", async ()=>{
   }
 });
 
-document.getElementById("btnPublish").addEventListener("click", async ()=>{
-  await saveSchedule();
+document.getElementById("btnPublish").addEventListener("click", ()=>{
+  saveSchedule();
   renderPublicSchedule();
   const statusEl = document.getElementById("adminStatus");
   statusEl.textContent = "Horario publicado — ya es visible en la vista pública.";
