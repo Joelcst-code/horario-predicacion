@@ -103,6 +103,21 @@
   .fb-dot.yellow{background:#f5a623;}
   .fb-dot.red{background:var(--warn);}
   .loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.75);display:flex;align-items:center;justify-content:center;z-index:999;font-size:1rem;font-weight:600;color:var(--accent-dark);}
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;z-index:1000;}
+  .modal-box{background:#fff;border-radius:14px;padding:24px 20px;max-width:380px;width:92%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+  .modal-box h3{margin:0 0 10px;font-size:1rem;color:var(--accent-dark);}
+  .modal-box p{font-size:0.85rem;color:var(--ink);margin:0 0 16px;line-height:1.5;}
+  .modal-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+  /* Area management */
+  .area-item{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+  .area-item input{flex:1;min-width:0;}
+  .order-btns{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
+  .order-btns button{padding:2px 7px;font-size:0.7rem;line-height:1.4;}
+  /* Companion */
+  .companion-box{background:#f3f1ea;border-radius:8px;padding:12px;margin-top:8px;}
+  .companion-box label{margin-top:8px;}
+  .companion-box label:first-child{margin-top:0;}
 </style>
 </head>
 <body>
@@ -123,12 +138,7 @@
 
   <!-- ============ VISTA PÚBLICA ============ -->
   <section id="tab-publico" class="panel">
-    <h2>📋 Horario actual</h2>
-    <div id="publicSchedule"></div>
-
-    <hr class="div">
-
-    <h2>✍️ Regístrate como publicador disponible. 2 Cor. 9:7</h2>
+    <h2>✍️ Regístrate - 2 Cor. 9:7</h2>
     <p class="small">Llena tus datos para que el hermano/hermana encargado del horario pueda asignarte a un punto. Esto no te asigna automáticamente — solo indica tu disponibilidad.</p>
 
     <label>Nombre completo</label>
@@ -143,10 +153,26 @@
     <label>Horarios disponibles</label>
     <div class="check-grid" id="regHorarios"></div>
 
-    <label>Coloca los puntos dónde puedes ir (Opcional, deja vacío si te haces disponible)</label>
-    <input type="text" id="regPuntos" placeholder="Ej.: Paradero Perla, Diamante, etc">
+    <label>Etapas disponibles</label>
+    <div class="check-grid" id="regEtapas"></div>
 
-    <div class="submit-row" style="text-align:center;">
+    <label>Centros comerciales disponibles</label>
+    <div class="check-grid" id="regCentros"></div>
+
+    <label>¿Te registras solo o en pareja?</label>
+    <div style="display:flex;gap:12px;margin-top:4px;">
+      <label class="check-item"><input type="radio" name="regModo" value="solo" checked> Solo/a</label>
+      <label class="check-item"><input type="radio" name="regModo" value="pareja"> En pareja</label>
+    </div>
+
+    <div id="companionFields" class="companion-box hidden">
+      <label style="margin-top:0;">Nombre del acompañante</label>
+      <input type="text" id="regCompanionName" placeholder="Ej.: María López">
+      <label>Teléfono del acompañante (opcional)</label>
+      <input type="tel" id="regCompanionPhone" placeholder="09xxxxxxxx">
+    </div>
+
+    <div class="submit-row" style="text-align:center;margin-top:16px;">
       <button id="btnRegister" style="width:100%;max-width:420px;">Registrar mi disponibilidad</button>
       <div id="regStatus" class="status-msg"></div>
     </div>
@@ -237,6 +263,23 @@
         <hr class="div">
       </div>
 
+      <!-- Etapas y Centros -->
+      <h2>📍 Etapas y Centros comerciales</h2>
+      <p class="small">Gestiona las opciones disponibles en el formulario de registro. Puedes agregar, editar, eliminar o reordenar.</p>
+      <div class="general-card" style="margin-bottom:10px;">
+        <strong style="display:block;margin-bottom:8px;">Etapas disponibles</strong>
+        <div id="adminEtapasList"></div>
+        <button class="secondary" style="margin-top:6px;" onclick="addEtapa()">+ Agregar etapa</button>
+      </div>
+      <div class="general-card" style="margin-bottom:10px;">
+        <strong style="display:block;margin-bottom:8px;">Centros comerciales</strong>
+        <div id="adminCentrosList"></div>
+        <button class="secondary" style="margin-top:6px;" onclick="addCentro()">+ Agregar centro</button>
+      </div>
+      <button id="btnSaveAreas">💾 Guardar etapas y centros</button>
+      <div id="areasStatus" class="status-msg"></div>
+      <hr class="div">
+
       <!-- Puntos -->
       <h2>🗺️ Puntos de predicación</h2>
       <div id="pointsContainer">Cargando...</div>
@@ -279,10 +322,14 @@ const USERS = {
 const DIAS        = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 const DIAS_SEMANA = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 const DEFAULT_HORARIOS = ["6:30 - 8:30","9:00 - 11:00","16:00 - 18:00","18:00 - 20:00","20:00 - 21:30"];
+const DEFAULT_ETAPAS  = ["Onix","Brillante","Diamante","Esmeralda","Tiara","Platino","Turquesa","Perla","Gema","Oro","Aquamarina"];
+const DEFAULT_CENTROS = ["Gran Aki","Veris","Plaza Orlando","Plaza San Miguel"];
 
 let publishers  = [];
 let schedule    = [];
 let horarios    = [];
+let etapas      = [];
+let centros     = [];
 let currentUser = null;
 
 let db = null; // Firebase database instance
@@ -493,10 +540,42 @@ async function guardarHorarios(){
   ls_set("horarios", horarios);
 }
 
+async function cargarEtapas(){
+  if(db){
+    const v = await fbGet("etapas");
+    if(v){ etapas = toArray(v).filter(Boolean); }
+    else { etapas = DEFAULT_ETAPAS.slice(); await guardarEtapas(); }
+  } else {
+    const local = ls_get("etapas");
+    etapas = (local && local.length) ? local : DEFAULT_ETAPAS.slice();
+  }
+}
+async function guardarEtapas(){
+  if(db) await fbSet("etapas", etapas);
+  ls_set("etapas", etapas);
+}
+
+async function cargarCentros(){
+  if(db){
+    const v = await fbGet("centros");
+    if(v){ centros = toArray(v).filter(Boolean); }
+    else { centros = DEFAULT_CENTROS.slice(); await guardarCentros(); }
+  } else {
+    const local = ls_get("centros");
+    centros = (local && local.length) ? local : DEFAULT_CENTROS.slice();
+  }
+}
+async function guardarCentros(){
+  if(db) await fbSet("centros", centros);
+  ls_set("centros", centros);
+}
+
 async function cargarTodo(){
   await cargarPublishers();
   await cargarSchedule();
   await cargarHorarios();
+  await cargarEtapas();
+  await cargarCentros();
 }
 
 function defaultSchedule(){
@@ -524,7 +603,40 @@ function buildChecks(container, items, prefix){
   `).join("");
 }
 function rebuildRegHorarios(){ buildChecks(document.getElementById("regHorarios"), horarios, "horario"); }
+function rebuildRegEtapas(){ buildChecks(document.getElementById("regEtapas"), etapas, "etapa"); }
+function rebuildRegCentros(){ buildChecks(document.getElementById("regCentros"), centros, "centro"); }
 buildChecks(document.getElementById("regDays"), DIAS, "day");
+
+// Toggle companion fields
+document.querySelectorAll('input[name="regModo"]').forEach(r=>{
+  r.addEventListener("change", ()=>{
+    const isPair = document.querySelector('input[name="regModo"]:checked')?.value === "pareja";
+    document.getElementById("companionFields").classList.toggle("hidden", !isPair);
+  });
+});
+
+// ============================================================
+// MODAL de advertencia de área llena
+// ============================================================
+function mostrarAlertaArea(areas){
+  return new Promise(resolve=>{
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML = `
+      <div class="modal-box">
+        <h3>⚠️ Área casi llena</h3>
+        <p>El siguiente lugar ya tiene 3 o más registros:<br><strong>${areas.map(a=>esc(a)).join(", ")}</strong><br><br>
+        Elige otra área para que puedas participar pronto en la predicación.</p>
+        <div class="modal-actions">
+          <button class="secondary" id="_modalCancel">Volver y cambiar</button>
+          <button id="_modalOk">Registrarme de todas formas</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#_modalOk").onclick=()=>{ overlay.remove(); resolve(true); };
+    overlay.querySelector("#_modalCancel").onclick=()=>{ overlay.remove(); resolve(false); };
+  });
+}
 
 // ============================================================
 // REGISTRO PUBLICADOR
@@ -533,20 +645,46 @@ document.getElementById("btnRegister").addEventListener("click", async ()=>{
   const name    = document.getElementById("regName").value.trim();
   const statusEl= document.getElementById("regStatus");
   if(!name){ statusEl.textContent="Por favor escribe tu nombre."; statusEl.className="status-msg err"; return; }
-  const days   = [...document.querySelectorAll('#regDays input:checked')].map(c=>c.value);
-  const hs     = [...document.querySelectorAll('#regHorarios input:checked')].map(c=>c.value);
-  const phone  = document.getElementById("regPhone").value.trim();
-  const puntos = document.getElementById("regPuntos").value.trim();
+
+  const days       = [...document.querySelectorAll('#regDays input:checked')].map(c=>c.value);
+  const hs         = [...document.querySelectorAll('#regHorarios input:checked')].map(c=>c.value);
+  const selEtapas  = [...document.querySelectorAll('#regEtapas input:checked')].map(c=>c.value);
+  const selCentros = [...document.querySelectorAll('#regCentros input:checked')].map(c=>c.value);
+  const phone      = document.getElementById("regPhone").value.trim();
+  const modo       = document.querySelector('input[name="regModo"]:checked')?.value || "solo";
+
+  let companion = null;
+  if(modo === "pareja"){
+    const cName = document.getElementById("regCompanionName").value.trim();
+    if(!cName){ statusEl.textContent="Escribe el nombre de tu acompañante."; statusEl.className="status-msg err"; return; }
+    companion = { name: cName, phone: document.getElementById("regCompanionPhone").value.trim() };
+  }
+
+  // Verificar si algún área ya tiene 3+ registros
   await cargarPublishers();
-  publishers.push({ id: uid(), name, phone, days, horarios: hs, puntos });
+  const warnings = [];
+  [...selEtapas, ...selCentros].forEach(area=>{
+    const count = publishers.filter(p=>(p.etapas||[]).includes(area)||(p.centros||[]).includes(area)).length;
+    if(count >= 3 && !warnings.includes(area)) warnings.push(area);
+  });
+  if(warnings.length > 0){
+    const continuar = await mostrarAlertaArea(warnings);
+    if(!continuar) return;
+  }
+
+  const timestamp = new Date().toISOString();
+  publishers.push({ id: uid(), name, phone, days, horarios: hs, etapas: selEtapas, centros: selCentros, companion, timestamp });
   try{
     await guardarPublishers();
-    statusEl.textContent="¡Listo! Quedaste registrado, "+name+".";
-    statusEl.className="status-msg ok";
+    statusEl.textContent = "¡Listo! Quedaste registrado, "+name+".";
+    statusEl.className = "status-msg ok";
     document.getElementById("regName").value="";
     document.getElementById("regPhone").value="";
-    document.getElementById("regPuntos").value="";
-    document.querySelectorAll('#regDays input, #regHorarios input').forEach(c=>c.checked=false);
+    document.getElementById("regCompanionName").value="";
+    document.getElementById("regCompanionPhone").value="";
+    document.querySelectorAll('#regDays input,#regHorarios input,#regEtapas input,#regCentros input').forEach(c=>c.checked=false);
+    document.querySelector('input[name="regModo"][value="solo"]').checked=true;
+    document.getElementById("companionFields").classList.add("hidden");
   }catch(e){
     statusEl.textContent="Hubo un error guardando tu registro. Intenta de nuevo.";
     statusEl.className="status-msg err";
@@ -561,6 +699,7 @@ let activePuntoIdx = 0;
 async function renderPublicSchedule(){
   await cargarSchedule();
   const el = document.getElementById("publicSchedule");
+  if(!el) return;
   if(!schedule || schedule.length===0){ el.innerHTML="<p class='small'>Aún no hay puntos configurados.</p>"; return; }
   const tabsHtml = `<div class="punto-tabs">${
     schedule.map((p,i)=>`<div class="punto-tab ${i===activePuntoIdx?'active':''}" onclick="switchPunto(${i})">${esc(p.name)}</div>`).join("")
@@ -627,8 +766,11 @@ async function renderAdmin(){
   document.getElementById("fbConfigPanel").classList.add("hidden");
   renderPublisherList();
   if(esSuper) renderRangos();
+  renderAdminAreas();
   renderPointsEditor();
   rebuildRegHorarios();
+  rebuildRegEtapas();
+  rebuildRegCentros();
 }
 
 // ============================================================
@@ -638,11 +780,16 @@ function renderPublisherList(){
   const el = document.getElementById("publisherList");
   document.getElementById("pubCount").textContent = publishers.length;
   if(publishers.length===0){ el.innerHTML="<div class='pub-row small'>Nadie se ha registrado todavía.</div>"; return; }
-  el.innerHTML = publishers.map(p=>`
+  el.innerHTML = publishers.map(p=>{
+    const fechaStr = p.timestamp ? new Date(p.timestamp).toLocaleString("es-EC",{dateStyle:"short",timeStyle:"short"}) : "";
+    const etapasStr = (p.etapas||[]).join(", ");
+    const centrosStr = (p.centros||[]).join(", ");
+    const companionStr = p.companion ? ` · 👫 ${esc(p.companion.name)}${p.companion.phone?" ("+esc(p.companion.phone)+")":""}` : "";
+    return `
     <div class="pub-row">
       <div class="pub-info">
-        <strong>${esc(p.name)}</strong>${p.phone?" · 📞 "+esc(p.phone):""}<br>
-        <span class="small">${(p.days||[]).join(", ")||"(sin días)"} · ${(p.horarios||[]).join(", ")||"(sin horarios)"}${p.puntos?" · prefiere: "+esc(p.puntos):""}</span>
+        <strong>${esc(p.name)}</strong>${p.phone?" · 📞 "+esc(p.phone):""}${companionStr}${fechaStr?` <span class='small' style='color:var(--muted);'>(${fechaStr})</span>`:""}<br>
+        <span class="small">${(p.days||[]).join(", ")||"(sin días)"} · ${(p.horarios||[]).join(", ")||"(sin horarios)"}${etapasStr?" · etapas: "+etapasStr:""}${centrosStr?" · centros: "+centrosStr:""}</span>
         <div class="edit-form" id="editform-${p.id}">
           <div class="edit-row">
             <div><label style="margin-top:0;">Nombre</label><input type="text" id="en-${p.id}" value="${esc(p.name)}"></div>
@@ -666,8 +813,8 @@ function renderPublisherList(){
         <button class="icon-btn" title="Editar" onclick="toggleEdit('${p.id}')">✏️</button>
         <button class="danger icon-btn" title="Quitar" onclick="removePublisher('${p.id}')">✕</button>
       </div>
-    </div>
-  `).join("");
+    </div>`;
+  }).join("");
 }
 
 function toggleEdit(id){ document.getElementById("editform-"+id).classList.toggle("open"); }
@@ -694,8 +841,11 @@ window.removePublisher = removePublisher;
 // ============================================================
 document.getElementById("btnExportExcel").addEventListener("click", ()=>{
   if(publishers.length===0){ alert("No hay publicadores registrados."); return; }
-  const rows = [["Nombre","Teléfono","Días disponibles","Horarios disponibles","Puntos preferidos"]];
-  publishers.forEach(p=>{ rows.push([p.name,p.phone||"",(p.days||[]).join("; "),(p.horarios||[]).join("; "),p.puntos||""]); });
+  const rows = [["Nombre","Teléfono","Acompañante","Tel. Acompañante","Días disponibles","Horarios disponibles","Etapas","Centros comerciales","Fecha registro"]];
+  publishers.forEach(p=>{
+    const fecha = p.timestamp ? new Date(p.timestamp).toLocaleString("es-EC") : "";
+    rows.push([p.name,p.phone||"",p.companion?p.companion.name:"",p.companion?p.companion.phone||"":"",(p.days||[]).join("; "),(p.horarios||[]).join("; "),(p.etapas||[]).join("; "),(p.centros||[]).join("; "),fecha]);
+  });
   const csv = rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\r\n");
   descargar("publicadores.csv","text/csv;charset=utf-8;","﻿"+csv);
 });
@@ -742,6 +892,56 @@ function splitCsvLine(line){
   const r=[]; let c=""; let inQ=false;
   for(let i=0;i<line.length;i++){ const ch=line[i]; if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){r.push(c);c="";}else{c+=ch;} } r.push(c); return r;
 }
+
+// ============================================================
+// ADMIN ÁREAS (ETAPAS Y CENTROS)
+// ============================================================
+function renderAdminAreas(){
+  renderAreaList("adminEtapasList", etapas, "etapa");
+  renderAreaList("adminCentrosList", centros, "centro");
+}
+
+function renderAreaList(containerId, items, type){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  if(items.length===0){ el.innerHTML="<p class='small'>Sin items.</p>"; return; }
+  el.innerHTML = items.map((item,i)=>`
+    <div class="area-item">
+      <input type="text" value="${esc(item)}" onchange="updateArea('${type}',${i},this.value)" placeholder="Nombre...">
+      <div class="order-btns">
+        <button class="icon-btn" onclick="moveArea('${type}',${i},-1)"${i===0?" disabled":""}>▲</button>
+        <button class="icon-btn" onclick="moveArea('${type}',${i},1)"${i===items.length-1?" disabled":""}>▼</button>
+      </div>
+      <button class="danger icon-btn" onclick="removeArea('${type}',${i})">✕</button>
+    </div>`).join("");
+}
+
+function updateArea(type,i,val){ if(type==="etapa") etapas[i]=val; else centros[i]=val; }
+window.updateArea=updateArea;
+
+function moveArea(type,i,dir){
+  const arr = type==="etapa" ? etapas : centros;
+  const j=i+dir; if(j<0||j>=arr.length) return;
+  [arr[i],arr[j]]=[arr[j],arr[i]];
+  renderAdminAreas();
+}
+window.moveArea=moveArea;
+
+function addEtapa(){ etapas.push(""); renderAdminAreas(); } window.addEtapa=addEtapa;
+function addCentro(){ centros.push(""); renderAdminAreas(); } window.addCentro=addCentro;
+function removeArea(type,i){ if(type==="etapa") etapas.splice(i,1); else centros.splice(i,1); renderAdminAreas(); } window.removeArea=removeArea;
+
+document.getElementById("btnSaveAreas").addEventListener("click", async ()=>{
+  etapas  = etapas.map(e=>e.trim()).filter(Boolean);
+  centros = centros.map(c=>c.trim()).filter(Boolean);
+  await guardarEtapas();
+  await guardarCentros();
+  renderAdminAreas();
+  rebuildRegEtapas();
+  rebuildRegCentros();
+  const st=document.getElementById("areasStatus");
+  st.textContent="Etapas y centros guardados."; st.className="status-msg ok";
+});
 
 // ============================================================
 // RANGOS
@@ -822,7 +1022,7 @@ document.getElementById("btnPublish").addEventListener("click", async ()=>{
 // RESPALDO / RESTAURACIÓN
 // ============================================================
 document.getElementById("btnRespaldo").addEventListener("click", ()=>{
-  const respaldo={ version:2, fecha:new Date().toISOString(), publishers, schedule, horarios };
+  const respaldo={ version:3, fecha:new Date().toISOString(), publishers, schedule, horarios, etapas, centros };
   const fecha=new Date().toISOString().slice(0,10);
   descargar(`respaldo-horario-${fecha}.json`,"application/json",JSON.stringify(respaldo,null,2));
   const st=document.getElementById("respaldoStatus"); st.textContent="Respaldo generado."; st.className="status-msg ok";
@@ -838,7 +1038,10 @@ async function restaurarRespaldo(input){
       if(!data.publishers||!data.schedule||!data.horarios) throw new Error("Archivo de respaldo inválido.");
       if(!confirm(`¿Restaurar respaldo del ${(data.fecha||"").slice(0,10)}?\n• ${data.publishers.length} publicadores\n• ${data.schedule.length} puntos\n• ${data.horarios.length} rangos\n\nEsto reemplazará los datos actuales.`)){input.value="";return;}
       publishers=data.publishers; schedule=data.schedule; horarios=data.horarios;
+      if(data.etapas) etapas=data.etapas;
+      if(data.centros) centros=data.centros;
       await guardarPublishers(); await guardarSchedule(); await guardarHorarios();
+      await guardarEtapas(); await guardarCentros();
       renderAdmin(); renderPublicSchedule();
       st.textContent="Respaldo restaurado correctamente."; st.className="status-msg ok";
     }catch(err){ st.textContent="Error al restaurar: "+err.message; st.className="status-msg err"; }
@@ -864,8 +1067,11 @@ function descargar(nombre,tipo,contenido){
 (async function init(){
   tryLoadFirebaseConfig();
   await cargarHorarios();
+  await cargarEtapas();
+  await cargarCentros();
   rebuildRegHorarios();
-  await renderPublicSchedule();
+  rebuildRegEtapas();
+  rebuildRegCentros();
   document.getElementById("loadingOverlay").style.display="none";
 })();
 </script>
