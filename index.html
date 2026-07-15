@@ -398,13 +398,35 @@ async function fbSet(path, val){
   await db.ref(path).set(val);
 }
 
+// Firebase puede devolver arrays como objetos {0:…,1:…} — estas funciones normalizan todo
+function toArray(v){ if(!v) return []; return Array.isArray(v) ? v : Object.values(v); }
+
+function normalizeSchedule(raw){
+  return toArray(raw).filter(Boolean).map(point=>({
+    ...point,
+    slots: toArray(point.slots).filter(Boolean).map(slot=>({
+      ...slot,
+      participants: toArray(slot.participants).length
+        ? toArray(slot.participants)
+        : ["","","","",""]
+    }))
+  }));
+}
+
+function normalizePublishers(raw){
+  // publishers se guarda como objeto {id: pub} para evitar colisiones, convertir a array
+  if(!raw) return [];
+  if(Array.isArray(raw)) return raw.filter(Boolean);
+  return Object.values(raw).filter(Boolean);
+}
+
 async function cargarPublishers(){
   if(db){
     const v = await fbGet("publishers");
     if(v){
-      publishers = Object.values(v);
+      publishers = normalizePublishers(v);
     } else {
-      // Firebase vacío: migrar desde localStorage si hay datos
+      // Firebase vacío: migrar desde localStorage
       const local = ls_get("publishers") || [];
       publishers = local;
       if(local.length > 0) await guardarPublishers();
@@ -426,15 +448,15 @@ async function cargarSchedule(){
   if(db){
     const v = await fbGet("schedule");
     if(v){
-      schedule = v;
+      schedule = normalizeSchedule(v);
     } else {
-      // Firebase vacío: migrar desde localStorage
       const local = ls_get("schedule");
-      schedule = local || defaultSchedule();
+      schedule = local ? normalizeSchedule(local) : defaultSchedule();
       await guardarSchedule();
     }
   } else {
-    schedule = ls_get("schedule");
+    const local = ls_get("schedule");
+    schedule = local ? normalizeSchedule(local) : null;
     if(!schedule){ schedule = defaultSchedule(); await guardarSchedule(); }
   }
 }
@@ -447,15 +469,15 @@ async function cargarHorarios(){
   if(db){
     const v = await fbGet("horarios");
     if(v){
-      horarios = v;
+      horarios = toArray(v).filter(Boolean);
     } else {
-      // Firebase vacío: migrar desde localStorage
       const local = ls_get("horarios");
-      horarios = local || DEFAULT_HORARIOS.slice();
+      horarios = (local && local.length) ? local : DEFAULT_HORARIOS.slice();
       await guardarHorarios();
     }
   } else {
-    horarios = ls_get("horarios") || DEFAULT_HORARIOS.slice();
+    const local = ls_get("horarios");
+    horarios = (local && local.length) ? local : DEFAULT_HORARIOS.slice();
   }
 }
 async function guardarHorarios(){
@@ -464,7 +486,6 @@ async function guardarHorarios(){
 }
 
 async function cargarTodo(){
-  // Carga secuencial para garantizar que publishers esté listo antes de renderizar
   await cargarPublishers();
   await cargarSchedule();
   await cargarHorarios();
