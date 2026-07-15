@@ -39,7 +39,6 @@
   .panel{background:var(--card); border:1px solid var(--line); border-top:none; border-radius:0 0 12px 12px; padding:20px;}
   .hidden{display:none;}
   h2{font-size:1.05rem; margin:0 0 12px; color:var(--accent-dark);}
-  h3{font-size:0.95rem; margin:0 0 8px; color:var(--accent-dark);}
   label{display:block; font-size:0.82rem; font-weight:600; margin:12px 0 4px; color:var(--muted);}
   input[type=text], input[type=tel], select{
     width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font-size:0.92rem; background:#fdfdfc;
@@ -66,8 +65,7 @@
   .point-head{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;}
   .point-head input[type=text]{font-weight:700; font-size:1rem; border:none; background:transparent; padding:2px 4px;}
   .point-head input[type=text]:focus{background:#fff; border:1px solid var(--line);}
-  .slot-row{display:grid; grid-template-columns:100px 140px 1fr 30px; gap:6px; align-items:center; margin-bottom:6px;}
-  .slot-row select.horario{font-size:0.82rem;}
+  .slot-row{display:grid; grid-template-columns:110px 150px 1fr 30px; gap:6px; align-items:center; margin-bottom:6px;}
   .participants{display:flex; flex-wrap:wrap; gap:4px;}
   .participants select{flex:1 1 120px; min-width:100px; font-size:0.78rem; padding:6px;}
   .pin-gate{max-width:340px; margin:40px auto; text-align:center;}
@@ -86,29 +84,22 @@
   .edit-row input{font-size:0.82rem; padding:6px 8px;}
   .actions-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;}
   .small{font-size:0.75rem; color:var(--muted);}
-  /* Punto tabs en vista pública */
+  /* Punto tabs vista pública */
   .punto-tabs{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;}
-  .punto-tab{
-    padding:7px 14px; border-radius:20px; border:1px solid var(--line);
-    background:#f3f1ea; color:var(--muted); cursor:pointer; font-size:0.83rem; font-weight:600;
-  }
+  .punto-tab{padding:7px 14px; border-radius:20px; border:1px solid var(--line); background:#f3f1ea; color:var(--muted); cursor:pointer; font-size:0.83rem; font-weight:600;}
   .punto-tab.active{background:var(--accent-dark); color:#fff; border-color:var(--accent-dark);}
   .punto-panel{display:none;}
   .punto-panel.active{display:block;}
   .dia-row{display:flex; align-items:baseline; gap:8px; padding:6px 0; border-bottom:1px solid var(--line);}
   .dia-row:last-child{border-bottom:none;}
   .dia-label{min-width:80px; font-weight:700; font-size:0.82rem; color:var(--accent-dark);}
-  .dia-slots{font-size:0.82rem; color:var(--ink);}
+  .dia-slots{font-size:0.82rem;}
   .dia-slot-item{margin-bottom:2px;}
   .sin-datos{font-size:0.8rem; color:var(--muted); font-style:italic;}
-  /* Horario general */
-  .general-card{border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:16px; background:#f7f5ee;}
-  .gen-slot-row{display:grid; grid-template-columns:120px 160px 34px; gap:6px; align-items:center; margin-bottom:6px;}
-  /* Horario por punto (días individuales) */
-  .point-days-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; margin-top:8px;}
-  .day-slot-card{border:1px solid var(--line); border-radius:8px; padding:10px; background:#f9f8f5;}
-  .day-slot-card h4{margin:0 0 6px; font-size:0.8rem; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
-  .day-horario-row{display:grid; grid-template-columns:1fr 26px; gap:4px; align-items:center; margin-bottom:4px;}
+  /* Rangos de horario */
+  .rango-row{display:grid; grid-template-columns:1fr 32px; gap:6px; align-items:center; margin-bottom:6px;}
+  .rango-row input{font-size:0.85rem; padding:7px 9px;}
+  .general-card{border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:12px; background:#f7f5ee;}
   hr.div{margin:20px 0; border:none; border-top:1px solid var(--line);}
 </style>
 </head>
@@ -173,22 +164,21 @@
       <!-- Publicadores -->
       <h2>👥 Publicadores registrados <span class="pill" id="pubCount">0</span></h2>
       <div id="publisherList" class="pub-list">Cargando...</div>
-
       <div style="margin-top:10px;">
         <button id="btnExportExcel" class="secondary">📥 Exportar a Excel (.csv)</button>
       </div>
 
       <hr class="div">
 
-      <!-- Horario General -->
-      <h2>🕐 Horario general</h2>
-      <p class="small">Define franjas horarias por día para aplicarlas a todos los puntos de una vez.</p>
+      <!-- Rangos de horario -->
+      <h2>🕐 Rangos de horario</h2>
+      <p class="small">Edita, elimina o agrega rangos. Estos son los que aparecen en los selectores al armar el horario y los que ven los publicadores al registrarse.</p>
       <div class="general-card">
-        <div id="genSlots"></div>
-        <button class="secondary" style="margin-top:6px;" onclick="addGenSlot()">+ Agregar franja</button>
+        <div id="rangosContainer"></div>
+        <button class="secondary" style="margin-top:6px;" onclick="addRango()">+ Agregar rango</button>
       </div>
-      <button id="btnApplyGeneral">Aplicar horario general a todos los puntos</button>
-      <p class="small" style="margin-top:6px;">Esto agrega las franjas a todos los puntos (no elimina las existentes).</p>
+      <button id="btnSaveRangos">💾 Guardar rangos</button>
+      <div id="rangosStatus" class="status-msg"></div>
 
       <hr class="div">
 
@@ -210,12 +200,12 @@
 <script>
 const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 const DIAS_SEMANA = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
-const HORARIOS = ["6:30 - 8:30","9:00 - 11:00","16:00 - 18:00","18:00 - 20:00","20:00 - 21:30"];
+const DEFAULT_HORARIOS = ["6:30 - 8:30","9:00 - 11:00","16:00 - 18:00","18:00 - 20:00","20:00 - 21:30"];
 const ADMIN_PIN = "1914.1914";
 
 let publishers = [];
 let schedule = [];
-let genSlots = []; // [{id, day, horario}]
+let horarios = []; // lista editable de rangos
 
 function uid(){ return Math.random().toString(36).slice(2,9); }
 
@@ -237,6 +227,16 @@ function loadSchedule(){
 function saveSchedule(){
   localStorage.setItem("schedule", JSON.stringify(schedule));
 }
+function loadHorarios(){
+  try{
+    const raw = localStorage.getItem("horarios");
+    horarios = raw ? JSON.parse(raw) : null;
+  }catch(e){ horarios = null; }
+  if(!horarios){ horarios = DEFAULT_HORARIOS.slice(); saveHorarios(); }
+}
+function saveHorarios(){
+  localStorage.setItem("horarios", JSON.stringify(horarios));
+}
 function defaultSchedule(){
   return [1,2,3,4,5].map(n=>({ id: uid(), name: "Punto " + n, slots: [] }));
 }
@@ -251,14 +251,16 @@ document.querySelectorAll(".tab").forEach(t=>{
   });
 });
 
-// ---------- Checkboxes ----------
+// ---------- Checkboxes (usan horarios dinámicos) ----------
 function buildChecks(container, items, prefix){
   container.innerHTML = items.map(i=>`
     <label class="check-item"><input type="checkbox" value="${i}" data-group="${prefix}"> ${i}</label>
   `).join("");
 }
+function rebuildRegHorarios(){
+  buildChecks(document.getElementById("regHorarios"), horarios, "horario");
+}
 buildChecks(document.getElementById("regDays"), DIAS, "day");
-buildChecks(document.getElementById("regHorarios"), HORARIOS, "horario");
 
 // ---------- Register publisher ----------
 document.getElementById("btnRegister").addEventListener("click", ()=>{
@@ -270,12 +272,12 @@ document.getElementById("btnRegister").addEventListener("click", ()=>{
     return;
   }
   const days = [...document.querySelectorAll('#regDays input:checked')].map(c=>c.value);
-  const horarios = [...document.querySelectorAll('#regHorarios input:checked')].map(c=>c.value);
+  const hs = [...document.querySelectorAll('#regHorarios input:checked')].map(c=>c.value);
   const phone = document.getElementById("regPhone").value.trim();
   const puntos = document.getElementById("regPuntos").value.trim();
 
   loadPublishers();
-  publishers.push({ id: uid(), name, phone, days, horarios, puntos });
+  publishers.push({ id: uid(), name, phone, days, horarios: hs, puntos });
   try{
     savePublishers();
     statusEl.textContent = "¡Listo! Quedaste registrado, " + name + ".";
@@ -315,7 +317,7 @@ function renderPublicSchedule(){
         : `<span class="sin-datos">Sin horario</span>`;
       return `<div class="dia-row"><span class="dia-label">${dia}</span><div class="dia-slots">${contenido}</div></div>`;
     }).join("");
-    return `<div class="punto-panel ${i===activePuntoIdx?'active':''}" id="punto-panel-${i}">${diasHtml}</div>`;
+    return `<div class="punto-panel ${i===activePuntoIdx?'active':''}">${diasHtml}</div>`;
   }).join("");
 
   el.innerHTML = tabsHtml + panelsHtml;
@@ -336,16 +338,17 @@ document.getElementById("btnPinEnter").addEventListener("click", ()=>{
   }
 });
 
-// ---------- Admin ----------
 function renderAdmin(){
   loadPublishers();
   loadSchedule();
+  loadHorarios();
   renderPublisherList();
-  renderGenSlots();
+  renderRangos();
   renderPointsEditor();
+  rebuildRegHorarios();
 }
 
-// ---------- Publisher list with edit ----------
+// ---------- Publisher list ----------
 function renderPublisherList(){
   const el = document.getElementById("publisherList");
   document.getElementById("pubCount").textContent = publishers.length;
@@ -357,7 +360,7 @@ function renderPublisherList(){
     <div class="pub-row" id="pubrow-${p.id}">
       <div class="pub-info">
         <strong>${p.name}</strong>${p.phone?" · 📞 "+p.phone:""}<br>
-        <span class="small">${p.days.join(", ")||"(sin días)"} · ${p.horarios.join(", ")||"(sin horarios)"}${p.puntos?" · prefiere: "+p.puntos:""}</span>
+        <span class="small">${p.days.join(", ")||"(sin días)"} · ${(p.horarios||[]).join(", ")||"(sin horarios)"}${p.puntos?" · prefiere: "+p.puntos:""}</span>
         <div class="edit-form" id="editform-${p.id}">
           <div class="edit-row">
             <div>
@@ -371,11 +374,11 @@ function renderPublisherList(){
           </div>
           <label style="margin-top:4px;">Días disponibles</label>
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
-            ${DIAS.map(d=>`<label class="check-item" style="font-size:0.75rem;padding:4px 6px;"><input type="checkbox" data-edit-day="${p.id}" value="${d}" ${p.days.includes(d)?'checked':''}> ${d}</label>`).join("")}
+            ${DIAS.map(d=>`<label class="check-item" style="font-size:0.75rem;padding:4px 6px;"><input type="checkbox" data-edit-day="${p.id}" value="${d}" ${(p.days||[]).includes(d)?'checked':''}> ${d}</label>`).join("")}
           </div>
           <label>Horarios disponibles</label>
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
-            ${HORARIOS.map(h=>`<label class="check-item" style="font-size:0.75rem;padding:4px 6px;"><input type="checkbox" data-edit-hor="${p.id}" value="${h}" ${p.horarios.includes(h)?'checked':''}> ${h}</label>`).join("")}
+            ${horarios.map(h=>`<label class="check-item" style="font-size:0.75rem;padding:4px 6px;"><input type="checkbox" data-edit-hor="${p.id}" value="${h}" ${(p.horarios||[]).includes(h)?'checked':''}> ${h}</label>`).join("")}
           </div>
           <div style="display:flex;gap:6px;">
             <button onclick="saveEditPublisher('${p.id}')">Guardar</button>
@@ -392,8 +395,7 @@ function renderPublisherList(){
 }
 
 function toggleEdit(id){
-  const form = document.getElementById("editform-"+id);
-  form.classList.toggle("open");
+  document.getElementById("editform-"+id).classList.toggle("open");
 }
 window.toggleEdit = toggleEdit;
 
@@ -410,7 +412,6 @@ function saveEditPublisher(id){
 window.saveEditPublisher = saveEditPublisher;
 
 function removePublisher(id){
-  loadPublishers();
   publishers = publishers.filter(p=>p.id!==id);
   savePublishers();
   renderPublisherList();
@@ -418,79 +419,61 @@ function removePublisher(id){
 }
 window.removePublisher = removePublisher;
 
-// ---------- Export to CSV / Excel ----------
+// ---------- Export CSV ----------
 document.getElementById("btnExportExcel").addEventListener("click", ()=>{
   loadPublishers();
   if(publishers.length===0){ alert("No hay publicadores registrados."); return; }
   const rows = [["Nombre","Teléfono","Días disponibles","Horarios disponibles","Puntos preferidos"]];
   publishers.forEach(p=>{
-    rows.push([
-      p.name,
-      p.phone||"",
-      p.days.join("; "),
-      p.horarios.join("; "),
-      p.puntos||""
-    ]);
+    rows.push([p.name, p.phone||"", (p.days||[]).join("; "), (p.horarios||[]).join("; "), p.puntos||""]);
   });
   const csv = rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\r\n");
   const blob = new Blob(["﻿"+csv], {type:"text/csv;charset=utf-8;"});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "publicadores.csv"; a.click();
+  const a = document.createElement("a"); a.href=url; a.download="publicadores.csv"; a.click();
   URL.revokeObjectURL(url);
 });
 
-// ---------- Horario General ----------
-function renderGenSlots(){
-  const el = document.getElementById("genSlots");
-  if(genSlots.length===0){
-    el.innerHTML = "<p class='small'>Sin franjas generales. Agrega una abajo.</p>";
+// ---------- Rangos de horario ----------
+function renderRangos(){
+  const el = document.getElementById("rangosContainer");
+  if(horarios.length===0){
+    el.innerHTML = "<p class='small'>Sin rangos. Agrega uno abajo.</p>";
     return;
   }
-  el.innerHTML = genSlots.map(s=>`
-    <div class="gen-slot-row">
-      <select onchange="updateGenSlot('${s.id}','day',this.value)">
-        ${DIAS.map(d=>`<option ${d===s.day?"selected":""}>${d}</option>`).join("")}
-      </select>
-      <select onchange="updateGenSlot('${s.id}','horario',this.value)">
-        ${HORARIOS.map(h=>`<option ${h===s.horario?"selected":""}>${h}</option>`).join("")}
-      </select>
-      <button class="danger" style="padding:5px 7px;" onclick="removeGenSlot('${s.id}')">✕</button>
+  el.innerHTML = horarios.map((h,i)=>`
+    <div class="rango-row">
+      <input type="text" value="${h}" onchange="updateRango(${i}, this.value)" placeholder="Ej: 9:00 - 11:00">
+      <button class="danger" style="padding:6px 8px;" onclick="removeRango(${i})">✕</button>
     </div>
   `).join("");
 }
 
-function addGenSlot(){
-  genSlots.push({ id: uid(), day: DIAS[0], horario: HORARIOS[0] });
-  renderGenSlots();
-}
-window.addGenSlot = addGenSlot;
+function updateRango(i, val){ horarios[i] = val; }
+window.updateRango = updateRango;
 
-function removeGenSlot(id){
-  genSlots = genSlots.filter(s=>s.id!==id);
-  renderGenSlots();
+function addRango(){
+  horarios.push(""); renderRangos();
+  // foco en el último input
+  const inputs = document.querySelectorAll("#rangosContainer .rango-row input");
+  if(inputs.length) inputs[inputs.length-1].focus();
 }
-window.removeGenSlot = removeGenSlot;
+window.addRango = addRango;
 
-function updateGenSlot(id, field, value){
-  const s = genSlots.find(x=>x.id===id);
-  if(s) s[field] = value;
+function removeRango(i){
+  horarios.splice(i,1); renderRangos();
 }
-window.updateGenSlot = updateGenSlot;
+window.removeRango = removeRango;
 
-document.getElementById("btnApplyGeneral").addEventListener("click", ()=>{
-  if(genSlots.length===0){ alert("No hay franjas generales definidas."); return; }
-  schedule.forEach(point=>{
-    genSlots.forEach(gs=>{
-      const exists = point.slots.some(s=>s.day===gs.day && s.horario===gs.horario);
-      if(!exists){
-        point.slots.push({ id: uid(), day: gs.day, horario: gs.horario, participants:["","","","",""] });
-      }
-    });
-  });
+document.getElementById("btnSaveRangos").addEventListener("click", ()=>{
+  horarios = horarios.map(h=>h.trim()).filter(Boolean);
+  saveHorarios();
+  renderRangos();
   renderPointsEditor();
-  document.getElementById("adminStatus").textContent = "Franjas generales aplicadas a todos los puntos.";
-  document.getElementById("adminStatus").className = "status-msg ok";
+  rebuildRegHorarios();
+  const st = document.getElementById("rangosStatus");
+  st.textContent = "Rangos guardados correctamente.";
+  st.className = "status-msg ok";
 });
 
 // ---------- Points editor ----------
@@ -503,6 +486,10 @@ function publisherOptions(selected){
   return opts;
 }
 
+function horarioOptions(selected){
+  return horarios.map(h=>`<option ${h===selected?"selected":""}>${h}</option>`).join("");
+}
+
 function renderPointsEditor(){
   const el = document.getElementById("pointsContainer");
   el.innerHTML = schedule.map(point=>`
@@ -511,39 +498,31 @@ function renderPointsEditor(){
         <input type="text" value="${point.name}" onchange="renamePoint('${point.id}', this.value)">
         <button class="danger" onclick="removePoint('${point.id}')">Eliminar punto</button>
       </div>
-
-      <p class="small" style="margin:4px 0 8px;">Horarios de este punto:</p>
-      <div class="point-days-grid" id="daygrid-${point.id}">
-        ${DIAS.map(dia=>{
-          const slotsDelDia = point.slots.filter(s=>s.day===dia);
-          const slotsHtml = slotsDelDia.map(s=>renderDaySlotRow(point.id, s)).join("") ||
-            `<span class="sin-datos" style="font-size:0.78rem;">Sin franjas</span>`;
-          return `
-            <div class="day-slot-card">
-              <h4>${dia}</h4>
-              <div id="dayslots-${point.id}-${dia}">${slotsHtml}</div>
-              <button class="secondary" style="font-size:0.72rem;padding:4px 8px;margin-top:4px;" onclick="addSlotForDay('${point.id}','${dia}')">+ Franja</button>
-            </div>`;
-        }).join("")}
+      <div class="slots">
+        ${point.slots.map(s=>renderSlotRow(point.id, s)).join("")}
       </div>
+      <button class="secondary" style="margin-top:4px;" onclick="addSlot('${point.id}')">+ Agregar horario a este punto</button>
     </div>
   `).join("");
 }
 
-function renderDaySlotRow(pointId, slot){
+function renderSlotRow(pointId, slot){
   return `
-    <div class="day-horario-row" data-slot="${slot.id}">
-      <select style="font-size:0.78rem;padding:4px 6px;" onchange="updateSlot('${pointId}','${slot.id}','horario',this.value)">
-        ${HORARIOS.map(h=>`<option ${h===slot.horario?"selected":""}>${h}</option>`).join("")}
+    <div class="slot-row" data-slot="${slot.id}">
+      <select onchange="updateSlot('${pointId}','${slot.id}','day',this.value)">
+        ${DIAS.map(d=>`<option ${d===slot.day?"selected":""}>${d}</option>`).join("")}
       </select>
-      <button class="danger" style="padding:4px 6px;font-size:0.75rem;" onclick="removeSlot('${pointId}','${slot.id}')">✕</button>
-    </div>
-    <div class="participants" style="margin-bottom:6px;">
-      ${[0,1,2,3,4].map(i=>`
-        <select style="font-size:0.75rem;padding:4px 6px;flex:1 1 100px;min-width:90px;" onchange="updateParticipant('${pointId}','${slot.id}',${i},this.value)">
-          ${publisherOptions(slot.participants[i]||"")}
-        </select>
-      `).join("")}
+      <select onchange="updateSlot('${pointId}','${slot.id}','horario',this.value)">
+        ${horarioOptions(slot.horario)}
+      </select>
+      <div class="participants">
+        ${[0,1,2,3,4].map(i=>`
+          <select onchange="updateParticipant('${pointId}','${slot.id}',${i},this.value)">
+            ${publisherOptions(slot.participants[i]||"")}
+          </select>
+        `).join("")}
+      </div>
+      <button class="danger" style="padding:6px 8px;" onclick="removeSlot('${pointId}','${slot.id}')">✕</button>
     </div>
   `;
 }
@@ -553,10 +532,7 @@ function findPoint(id){ return schedule.find(p=>p.id===id); }
 function renamePoint(id, val){ findPoint(id).name = val; }
 window.renamePoint = renamePoint;
 
-function removePoint(id){
-  schedule = schedule.filter(p=>p.id!==id);
-  renderPointsEditor();
-}
+function removePoint(id){ schedule=schedule.filter(p=>p.id!==id); renderPointsEditor(); }
 window.removePoint = removePoint;
 
 document.getElementById("btnAddPoint").addEventListener("click", ()=>{
@@ -564,53 +540,46 @@ document.getElementById("btnAddPoint").addEventListener("click", ()=>{
   renderPointsEditor();
 });
 
-function addSlotForDay(pointId, day){
-  findPoint(pointId).slots.push({ id: uid(), day, horario: HORARIOS[0], participants:["","","","",""] });
+function addSlot(pointId){
+  findPoint(pointId).slots.push({ id: uid(), day: DIAS[0], horario: horarios[0]||"", participants:["","","","",""] });
   renderPointsEditor();
 }
-window.addSlotForDay = addSlotForDay;
+window.addSlot = addSlot;
 
 function removeSlot(pointId, slotId){
-  const p = findPoint(pointId);
-  p.slots = p.slots.filter(s=>s.id!==slotId);
+  findPoint(pointId).slots = findPoint(pointId).slots.filter(s=>s.id!==slotId);
   renderPointsEditor();
 }
 window.removeSlot = removeSlot;
 
 function updateSlot(pointId, slotId, field, value){
-  const s = findPoint(pointId).slots.find(s=>s.id===slotId);
-  s[field] = value;
+  findPoint(pointId).slots.find(s=>s.id===slotId)[field] = value;
 }
 window.updateSlot = updateSlot;
 
 function updateParticipant(pointId, slotId, idx, value){
-  const s = findPoint(pointId).slots.find(s=>s.id===slotId);
-  s.participants[idx] = value;
+  findPoint(pointId).slots.find(s=>s.id===slotId).participants[idx] = value;
 }
 window.updateParticipant = updateParticipant;
 
 // ---------- Save / Publish ----------
 document.getElementById("btnSaveSchedule").addEventListener("click", ()=>{
-  const statusEl = document.getElementById("adminStatus");
-  try{
-    saveSchedule();
-    statusEl.textContent = "Cambios guardados correctamente.";
-    statusEl.className = "status-msg ok";
-  }catch(e){
-    statusEl.textContent = "Error al guardar. Intenta de nuevo.";
-    statusEl.className = "status-msg err";
-  }
+  const st = document.getElementById("adminStatus");
+  try{ saveSchedule(); st.textContent="Cambios guardados correctamente."; st.className="status-msg ok"; }
+  catch(e){ st.textContent="Error al guardar."; st.className="status-msg err"; }
 });
 
 document.getElementById("btnPublish").addEventListener("click", ()=>{
   saveSchedule();
   renderPublicSchedule();
-  const statusEl = document.getElementById("adminStatus");
-  statusEl.textContent = "Horario publicado — ya es visible en la vista pública.";
-  statusEl.className = "status-msg ok";
+  const st = document.getElementById("adminStatus");
+  st.textContent="Horario publicado — ya es visible en la vista pública.";
+  st.className="status-msg ok";
 });
 
 // ---------- Init ----------
+loadHorarios();
+rebuildRegHorarios();
 renderPublicSchedule();
 </script>
 
