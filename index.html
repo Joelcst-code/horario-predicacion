@@ -685,7 +685,10 @@ document.getElementById("btnRegister").addEventListener("click", async ()=>{
   }
 
   const timestamp = new Date().toISOString();
-  publishers.push({ id: uid(), name, phone, days, horarios: hs, etapas: selEtapas, centros: selCentros, companion, timestamp });
+  publishers.push({ id: uid(), name, phone, days, horarios: hs, etapas: selEtapas, centros: selCentros, companion: companion ? companion.name : null, timestamp });
+  if(companion){
+    publishers.push({ id: uid(), name: companion.name, phone: companion.phone, days, horarios: hs, etapas: selEtapas, centros: selCentros, companion: name, timestamp });
+  }
   try{
     await guardarPublishers();
     statusEl.textContent = "¡Listo! Quedaste registrado, "+name+".";
@@ -818,7 +821,7 @@ function renderPublisherList(){
     const fechaStr = p.timestamp ? new Date(p.timestamp).toLocaleString("es-EC",{dateStyle:"short",timeStyle:"short"}) : "";
     const etapasStr = (p.etapas||[]).join(", ");
     const centrosStr = (p.centros||[]).join(", ");
-    const companionStr = p.companion ? ` · 👫 ${esc(p.companion.name)}${p.companion.phone?" ("+esc(p.companion.phone)+")":""}` : "";
+    const companionStr = p.companion ? ` · 👫 pareja: ${esc(p.companion)}` : "";
     return `
     <div class="pub-row">
       <div class="pub-info">
